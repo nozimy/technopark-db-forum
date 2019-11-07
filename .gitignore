@@ -1,0 +1,9 @@
+.idea
+
+# Executable
+/technopark-db-forum
+/technopark-db-forum.exe
+
+# Go mod vendoring
+/vendor/
+go.sum
