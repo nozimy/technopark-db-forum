@@ -1,6 +1,7 @@
 .idea
 
 # Executable
+/bin
 /technopark-db-forum
 /technopark-db-forum.exe
 

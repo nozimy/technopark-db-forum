@@ -1,0 +1,3 @@
+- https://github.com/bozaro/tech-db-forum
+- https://github.com/bozaro/tech-db-hello
+- https://tech-db-forum.bozaro.ru/
