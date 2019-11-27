@@ -1,9 +1,12 @@
 package apiserver
 
 import (
+	"database/sql"
 	"github.com/gorilla/mux"
 	"net/http"
 	forumHttp "technopark-db-forum/internal/app/forum/delivery/http"
+	"technopark-db-forum/internal/app/forum/repository"
+	forumUsecase "technopark-db-forum/internal/app/forum/usecase"
 )
 
 type Server struct {
@@ -24,6 +27,10 @@ func NewServer(config *Config) (*Server, error) {
 	return server, nil
 }
 
-func (s *Server) ConfigureServer() {
-	forumHttp.NewForumHandler(s.Mux)
+func (s *Server) ConfigureServer(db *sql.DB) {
+	forumRep := forumRepository.NewForumRepository(db)
+
+	forumUse := forumUsecase.NewForumUsecase(forumRep)
+
+	forumHttp.NewForumHandler(s.Mux, forumUse)
 }

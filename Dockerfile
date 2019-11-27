@@ -6,16 +6,16 @@ ADD common/ /opt/build/commnon/
 
 # Собираем генераторы
 RUN go mod vendor
-RUN go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
-RUN go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
+#RUN go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
+#RUN go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
 
 # Собираем и устанавливаем пакет
 RUN go generate -x tools.go
-RUN go install ./cmd/hello-server
+RUN go install ./cmd/technopark-db-forum
 
 FROM ubuntu:18.04 AS release
 
-#MAINTAINER Artem V. Navrotskiy
+MAINTAINER Nozim Yunusov
 
 
 #
@@ -54,9 +54,9 @@ USER root
 EXPOSE 5000
 
 # Собранный ранее сервер
-COPY --from=build go/bin/hello-server /usr/bin/
+COPY --from=build go/bin/technopark-db-forum /usr/bin/
 
 #
 # Запускаем PostgreSQL и сервер
 #
-CMD service postgresql start && hello-server --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && technopark-db-forum --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
