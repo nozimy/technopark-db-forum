@@ -1,17 +1,39 @@
 package create
 
-import "database/sql"
+import (
+	"database/sql"
+	"io/ioutil"
+	"strings"
+)
 
 func CreateTables(db *sql.DB) error {
-	_ = dropAllTables(db)
+	//_ = dropAllTables(db)
 
-	forumsQuery := `CREATE TABLE IF NOT EXISTS forums (
-		id bigserial not null primary key,
-		name varchar
-	);`
-	if _, err := db.Exec(forumsQuery); err != nil {
+	//forumsQuery := `CREATE TABLE IF NOT EXISTS forums (
+	//	id bigserial not null primary key,
+	//	name varchar
+	//);`
+	//if _, err := db.Exec(forumsQuery); err != nil {
+	//	return err
+	//}
+
+	file, err := ioutil.ReadFile("./assets/db/postgres/base.sql")
+
+	if err != nil {
 		return err
 	}
+
+	requests := strings.Split(string(file), ";")
+	for _, request := range requests {
+		_, err := db.Exec(request)
+		if err != nil {
+			return err
+		}
+	}
+
+	//if _, err := db.Exec(string(file)); err != nil {
+	//	return err
+	//}
 
 	return nil
 }

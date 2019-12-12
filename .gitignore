@@ -4,6 +4,7 @@
 /bin
 /technopark-db-forum
 /technopark-db-forum.exe
+/tech-db-forum
 
 # Go mod vendoring
 /vendor/

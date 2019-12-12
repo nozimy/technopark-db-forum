@@ -7,6 +7,13 @@ import (
 	forumHttp "technopark-db-forum/internal/app/forum/delivery/http"
 	"technopark-db-forum/internal/app/forum/repository"
 	forumUsecase "technopark-db-forum/internal/app/forum/usecase"
+	threadHttp "technopark-db-forum/internal/app/thread/delivery/http"
+	threadRepository "technopark-db-forum/internal/app/thread/repository"
+	threadUsecase "technopark-db-forum/internal/app/thread/usecase"
+	userHttp "technopark-db-forum/internal/app/user/delivery/http"
+	userRepository "technopark-db-forum/internal/app/user/repository"
+	userUsecase "technopark-db-forum/internal/app/user/usecase"
+	"technopark-db-forum/internal/middleware"
 )
 
 type Server struct {
@@ -20,7 +27,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func NewServer(config *Config) (*Server, error) {
 	server := &Server{
-		Mux:    mux.NewRouter(),
+		Mux:    mux.NewRouter().PathPrefix("/api").Subrouter(),
 		Config: config,
 	}
 
@@ -29,8 +36,16 @@ func NewServer(config *Config) (*Server, error) {
 
 func (s *Server) ConfigureServer(db *sql.DB) {
 	forumRep := forumRepository.NewForumRepository(db)
+	userRep := userRepository.NewUserRepository(db)
+	threadRep := threadRepository.NewThreadRepository(db)
 
-	forumUse := forumUsecase.NewForumUsecase(forumRep)
+	forumUse := forumUsecase.NewForumUsecase(forumRep, userRep, threadRep)
+	userUse := userUsecase.NewForumUsecase(userRep)
+	threadUse := threadUsecase.NewThreadUsecase(threadRep)
+
+	s.Mux.Use(middleware.CORSMiddleware)
 
 	forumHttp.NewForumHandler(s.Mux, forumUse)
+	userHttp.NewUserHandler(s.Mux, userUse)
+	threadHttp.NewThreadHandler(s.Mux, threadUse)
 }

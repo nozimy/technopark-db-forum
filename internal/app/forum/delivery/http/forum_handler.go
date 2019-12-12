@@ -1,11 +1,13 @@
 package forumHttp
 
 import (
-	"fmt"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	"log"
 	"net/http"
 	"technopark-db-forum/internal/app/forum"
+	"technopark-db-forum/internal/app/respond"
 	"technopark-db-forum/internal/model"
 )
 
@@ -18,24 +20,125 @@ func NewForumHandler(m *mux.Router, fu forum.Usecase) {
 		ForumUsecase: fu,
 	}
 
-	m.HandleFunc("/forum", handler.HandleForum).Methods(http.MethodGet)
-	m.HandleFunc("/forum-create", handler.HandleCreateForum).Methods(http.MethodGet)
+	m.HandleFunc("/forum/create", handler.HandleForumCreate).Methods(http.MethodPost, http.MethodOptions)
+	m.HandleFunc("/forum/{slug}/create", handler.HandleForumCreateThread).Methods(http.MethodPost, http.MethodOptions)
+	m.HandleFunc("/forum/{slug}/details", handler.HandleForumGetDetails).Methods(http.MethodGet)
+	m.HandleFunc("/forum/{slug}/threads", handler.HandleForumGetThreads).Methods(http.MethodGet)
+	m.HandleFunc("/forum/{slug}/users", handler.HandleForumGetUsers).Methods(http.MethodGet)
 }
 
-func (h *ForumHandler) HandleCreateForum(w http.ResponseWriter, r *http.Request) {
+func (h *ForumHandler) HandleForumCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	f := &model.Forum{
-		Name: "",
-	}
-	if err := h.ForumUsecase.CreateForum(f); err != nil {
-		err = errors.Wrapf(err, "HandleCreateForum<-CreateForum: ")
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			respond.Error(w, r, http.StatusInternalServerError, err)
+		}
+	}()
+
+	decoder := json.NewDecoder(r.Body)
+	newForum := new(model.Forum)
+	err := decoder.Decode(newForum)
+	if err != nil {
+		respond.Error(w, r, http.StatusBadRequest, err)
 		return
 	}
 
-	_, _ = fmt.Fprintf(w, "Hello: %v\n", "World")
+	forumObj, code, err := h.ForumUsecase.CreateForum(newForum)
+
+	if code == http.StatusNotFound {
+		respond.Error(w, r, http.StatusNotFound, err)
+		return
+	}
+
+	if code == http.StatusConflict {
+		respond.Respond(w, r, http.StatusConflict, forumObj)
+		return
+	}
+
+	respond.Respond(w, r, http.StatusCreated, forumObj)
 }
 
-func (h *ForumHandler) HandleForum(w http.ResponseWriter, r *http.Request) {
-	_, _ = fmt.Fprintf(w, "Hello: %v\n", "World")
+func (h *ForumHandler) HandleForumCreateThread(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			respond.Error(w, r, http.StatusInternalServerError, err)
+		}
+	}()
+
+	vars := mux.Vars(r)
+	slug := vars["slug"]
+
+	decoder := json.NewDecoder(r.Body)
+	newThread := new(model.NewThread)
+	err := decoder.Decode(newThread)
+	if err != nil {
+		respond.Error(w, r, http.StatusBadRequest, err)
+		return
+	}
+
+	threadObj, code, err := h.ForumUsecase.CreateThread(slug, newThread)
+
+	if code == http.StatusNotFound {
+		respond.Error(w, r, http.StatusNotFound, err)
+		return
+	}
+
+	if code == http.StatusConflict {
+		respond.Respond(w, r, http.StatusConflict, threadObj)
+		return
+	}
+
+	respond.Respond(w, r, http.StatusCreated, threadObj)
+}
+
+func (h *ForumHandler) HandleForumGetDetails(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	slug := vars["slug"]
+
+	forumObj, err := h.ForumUsecase.Find(slug)
+
+	if err != nil || forumObj == nil {
+		respond.Error(w, r, http.StatusNotFound, errors.New("Can't find forum with slug "+slug+"\n"))
+		return
+	}
+
+	respond.Respond(w, r, http.StatusOK, forumObj)
+}
+
+func (h *ForumHandler) HandleForumGetThreads(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	forumSlug := vars["slug"]
+
+	threads, code, err := h.ForumUsecase.GetThreadsByForum(forumSlug, r.URL.Query())
+
+	if err != nil || threads == nil || code == http.StatusNotFound {
+		log.Println(err)
+		respond.Error(w, r, http.StatusNotFound, errors.New("Can't find threads for forum slug "+forumSlug+"\n"))
+		return
+	}
+
+	respond.Respond(w, r, http.StatusOK, threads)
+}
+
+func (h *ForumHandler) HandleForumGetUsers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	vars := mux.Vars(r)
+	forumSlug := vars["slug"]
+
+	users, code, err := h.ForumUsecase.GetUsersByForum(forumSlug, r.URL.Query())
+
+	if err != nil || users == nil || code == http.StatusNotFound {
+		respond.Error(w, r, http.StatusNotFound, errors.New("Can't find users for forum slug "+forumSlug+"\n"))
+		return
+	}
+
+	respond.Respond(w, r, http.StatusOK, users)
 }
