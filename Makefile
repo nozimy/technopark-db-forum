@@ -1,5 +1,5 @@
 build:
-	go build -v -o ./bin/technopark-db-forum ./cmd/technopark-db-forum
+	go build -v -o ./technopark-db-forum ./cmd/technopark-db-forum
 
 run:
 	go run ./cmd/technopark-db-forum/main.go

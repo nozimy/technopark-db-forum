@@ -1,6 +1,7 @@
--- DROP TABLE IF EXISTS forums;
--- DROP TABLE IF EXISTS threads;
--- DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS forums;
+DROP TABLE IF EXISTS threads;
+DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS votes;
 
 
@@ -9,19 +10,25 @@ CREATE TABLE IF NOT EXISTS users
     id       bigserial not null primary key,
     nickname varchar   not null unique,
     about    varchar,
-    email    varchar   not null unique,
+    email    varchar   not null,
     fullname varchar   not null
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_uindex
+    ON users (LOWER(email));
 
 CREATE TABLE IF NOT EXISTS forums
 (
     id       bigserial not null primary key,
-    slug     varchar   not null unique,
+    slug     varchar   not null,
     userNick varchar   not null,
     title    varchar,
     posts    int default 0,
     threads  int default 0
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS forums_slug_uindex
+    ON forums (LOWER(slug));
 
 CREATE TABLE IF NOT EXISTS threads
 (

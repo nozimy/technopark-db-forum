@@ -2,7 +2,6 @@ package forumRepository
 
 import (
 	"database/sql"
-	"log"
 	"technopark-db-forum/internal/app/forum"
 	"technopark-db-forum/internal/model"
 )
@@ -12,6 +11,7 @@ type ForumRepository struct {
 }
 
 func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]string) (model.Threads, error) {
+	conditionSign := ">"
 	limits := params["limit"]
 	var limit string = "100"
 	if len(limits) >= 1 {
@@ -21,6 +21,7 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 	var desc string = ""
 	if len(descs) >= 1 && descs[0] == "true" {
 		desc = "desc"
+		conditionSign = "<"
 	}
 	sinces := params["since"]
 	var since string = ""
@@ -28,15 +29,16 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 		since = sinces[0]
 	}
 
-	var threads model.Threads
+	//var threads model.Threads
+	threads := model.Threads{}
 
 	var query string
 
-	if true {
-		query = "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE forum = $1"
-	}
+	//if true {
+	query = "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE LOWER(forum) = LOWER($1) "
+	//}
 	if since != "" {
-		query += " AND created > '" + since + "' "
+		query += " AND created " + conditionSign + " '" + since + "' OR created = '" + since + "' "
 	}
 	//query += " ORDER BY created $2 LIMIT $3"
 	query += " ORDER BY created " + desc + " LIMIT " + limit
@@ -44,7 +46,6 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 	rows, err := r.db.Query(query, forumSlug)
 
 	if err != nil {
-		log.Println("log", err)
 		return nil, err
 	}
 
@@ -98,7 +99,6 @@ func (r ForumRepository) FindForumUsers(forumSlug string, params map[string][]st
 	rows, err := r.db.Query(query)
 
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 
@@ -139,7 +139,7 @@ func (r ForumRepository) Create(f *model.Forum) error {
 func (r ForumRepository) Find(slug string) (*model.Forum, error) {
 	f := &model.Forum{}
 	if err := r.db.QueryRow(
-		"SELECT slug, title, usernick, posts, threads FROM forums WHERE slug = $1",
+		"SELECT slug, title, usernick, posts, threads FROM forums WHERE LOWER(slug) = LOWER($1)",
 		slug,
 	).Scan(
 		&f.Slug,

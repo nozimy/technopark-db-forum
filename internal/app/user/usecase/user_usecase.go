@@ -2,6 +2,7 @@ package userUsecase
 
 import (
 	"technopark-db-forum/internal/app/user"
+	"technopark-db-forum/internal/app/validation"
 	"technopark-db-forum/internal/model"
 )
 
@@ -34,6 +35,16 @@ func (u UserUsecase) Update(user *model.User) (*model.User, error, int) {
 
 	if err != nil || userObj == nil {
 		return nil, err, 404
+	}
+
+	if validation.IsEmptyString(user.Email) {
+		user.Email = userObj.Email
+	}
+	if validation.IsEmptyString(user.Fullname) {
+		user.Fullname = userObj.Fullname
+	}
+	if validation.IsEmptyString(user.About) {
+		user.About = userObj.About
 	}
 
 	userObj, err = u.rep.Update(user)

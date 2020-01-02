@@ -25,7 +25,7 @@ func (u UserRepository) FindByNickname(nickname string) (*model.User, error) {
 	userObj := &model.User{}
 
 	if err := u.db.QueryRow(
-		"SELECT nickname, about, email, fullname FROM users WHERE nickname = $1",
+		"SELECT nickname, about, email, fullname FROM users WHERE LOWER(nickname) = LOWER($1)",
 		nickname,
 	).Scan(
 		&userObj.Nickname,
@@ -43,7 +43,7 @@ func (u UserRepository) Find(nickname string, email string) ([]model.User, error
 	var users []model.User
 
 	rows, err := u.db.Query(
-		"SELECT nickname, about, email, fullname FROM users WHERE nickname = $1 OR email = $2",
+		"SELECT nickname, about, email, fullname FROM users WHERE LOWER(nickname) = LOWER($1) OR LOWER(email) = LOWER($2)",
 		nickname,
 		email,
 	)
@@ -70,7 +70,7 @@ func (u UserRepository) Find(nickname string, email string) ([]model.User, error
 
 func (u UserRepository) Update(user *model.User) (*model.User, error) {
 	if err := u.db.QueryRow(
-		"UPDATE users SET about = $1, email = $2, fullname = $3 WHERE nickname = $4 RETURNING nickname, about, email, fullname",
+		"UPDATE users SET about = $1, email = $2, fullname = $3 WHERE LOWER(nickname) = LOWER($4) RETURNING nickname, about, email, fullname",
 		user.About,
 		user.Email,
 		user.Fullname,

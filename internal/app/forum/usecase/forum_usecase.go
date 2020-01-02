@@ -2,7 +2,6 @@ package forumUsecase
 
 import (
 	"github.com/pkg/errors"
-	"log"
 	"technopark-db-forum/internal/app/forum"
 	"technopark-db-forum/internal/app/thread"
 	"technopark-db-forum/internal/app/user"
@@ -54,7 +53,7 @@ func (f ForumUsecase) CreateThread(forumSlug string, newThread *model.NewThread)
 		return nil, 404, err
 	}
 
-	newThread.Forum = forumSlug
+	newThread.Forum = forumObj.Slug
 
 	threadObj, err := f.threadRep.FindByIdOrSlug(0, newThread.Slug)
 	if threadObj != nil {
@@ -75,10 +74,11 @@ func (f ForumUsecase) CreateForum(data *model.Forum) (*model.Forum, int, error) 
 		return nil, 404, err
 	}
 
+	data.User = userObj.Nickname
+
 	if err := f.forumRep.Create(data); err != nil {
 		forumObj, err := f.forumRep.Find(data.Slug)
 		if err != nil {
-			log.Println(err)
 			return nil, 409, err
 		}
 

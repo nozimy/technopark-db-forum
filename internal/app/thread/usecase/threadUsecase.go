@@ -46,7 +46,7 @@ func (t ThreadUsecase) GetThreadPosts(threadSlugOrId string, params map[string][
 		since = sinces[0]
 	}
 	sorts := params["sort"]
-	sort := ""
+	sort := "flat"
 	if len(sorts) >= 1 {
 		sort = sorts[0]
 	}
@@ -57,7 +57,7 @@ func (t ThreadUsecase) GetThreadPosts(threadSlugOrId string, params map[string][
 	}
 
 	if sort == "tree" || sort == "parent_tree" {
-		posts = makeTree(posts)
+		//posts = makeTree(posts)
 	}
 
 	return posts, nil
@@ -115,16 +115,18 @@ func makeTree(posts model.Posts) model.Posts {
 			parent = p
 		} else if len(p.Path) > 1 {
 			if p.Parent == parent.ID {
-				parent.Childs = append(parent.Childs, p)
-				parent = p
+				//parent.Childs = append(parent.Childs, p)
+				tree = append(tree, p)
 				p.ParentPointer = parent
+				parent = p
 			} else {
 				for p.Parent != parent.ID {
 					parent = parent.ParentPointer
 				}
-				parent.Childs = append(parent.Childs, p)
-				parent = p
+				//parent.Childs = append(parent.Childs, p)
+				tree = append(tree, p)
 				p.ParentPointer = parent
+				parent = p
 			}
 		}
 	}

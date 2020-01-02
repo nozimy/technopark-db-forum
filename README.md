@@ -3,6 +3,11 @@
 - https://github.com/bozaro/tech-db-hello
 - https://tech-db-forum.bozaro.ru/
 
+- sudo docker build -t nozimdev/tech-db .
+- docker stop nozimdev/tech-db
+- docker rm - nozimdev/tech-db
+- docker run -p 5000:5000 --name nozimdev/tech-db -t nozimdev/tech-db 
+
 # [tech-db-forum](https://github.com/bozaro/tech-db-forum/)
 
 Тестовое задание для реализации проекта "Форумы" на курсе по базам данных в Технопарке Mail.ru (https://park.mail.ru).

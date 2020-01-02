@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-	"log"
 	"net/http"
 	"technopark-db-forum/internal/app/forum"
 	"technopark-db-forum/internal/app/respond"
@@ -118,8 +117,7 @@ func (h *ForumHandler) HandleForumGetThreads(w http.ResponseWriter, r *http.Requ
 
 	threads, code, err := h.ForumUsecase.GetThreadsByForum(forumSlug, r.URL.Query())
 
-	if err != nil || threads == nil || code == http.StatusNotFound {
-		log.Println(err)
+	if err != nil || code == http.StatusNotFound {
 		respond.Error(w, r, http.StatusNotFound, errors.New("Can't find threads for forum slug "+forumSlug+"\n"))
 		return
 	}
