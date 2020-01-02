@@ -73,10 +73,12 @@ func (r ForumRepository) FindForumUsers(forumSlug string, params map[string][]st
 	if len(limits) >= 1 {
 		limit = limits[0]
 	}
+	sinceConditionSign := ">"
 	descs := params["desc"]
 	var desc string = ""
 	if len(descs) >= 1 && descs[0] == "true" {
 		desc = "desc"
+		sinceConditionSign = "<"
 	}
 	sinces := params["since"]
 	var since string = ""
@@ -84,19 +86,23 @@ func (r ForumRepository) FindForumUsers(forumSlug string, params map[string][]st
 		since = sinces[0]
 	}
 
-	var users model.Users
+	users := model.Users{}
 
 	var query string
 
 	if true {
-		query = "SELECT nickname, email, fullname, about FROM users WHERE nickname IN (SELECT DISTINCT author FROM threads UNION SELECT DISTINCT author FROM posts)"
+		query = "SELECT nickname, email, fullname, about FROM users " +
+			"WHERE nickname IN (" +
+			"SELECT DISTINCT author FROM threads WHERE LOWER(forum) = LOWER($1) " +
+			"UNION SELECT DISTINCT author FROM posts WHERE LOWER(forum) = LOWER($1) " +
+			")"
 	}
 	if since != "" {
-		query += " AND LOWER(nickname) > '" + since + "' "
+		query += " AND LOWER(nickname COLLATE \"POSIX\") " + sinceConditionSign + " LOWER('" + since + "' COLLATE \"POSIX\") "
 	}
-	query += " ORDER BY LOWER(nickname) " + desc + " LIMIT " + limit
+	query += " ORDER BY LOWER(nickname COLLATE \"POSIX\") " + desc + " LIMIT " + limit
 
-	rows, err := r.db.Query(query)
+	rows, err := r.db.Query(query, forumSlug)
 
 	if err != nil {
 		return nil, err

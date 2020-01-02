@@ -63,4 +63,30 @@ CREATE TABLE IF NOT EXISTS votes
     thread   int      NOT NULL,
     voice    smallint NOT NULL CHECK (voice = 1 OR voice = -1),
     PRIMARY KEY (nickname, thread)
-)
+);
+
+CREATE OR REPLACE FUNCTION update_posts_count() RETURNS trigger AS $update_posts_count$
+    BEGIN
+        UPDATE forums SET posts = (SELECT count(*) FROM posts WHERE forum = NEW.forum) WHERE slug = NEW.forum;
+        RETURN NEW;
+    END;
+$update_posts_count$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_threads_count() RETURNS trigger AS $body$
+    BEGIN
+        UPDATE forums SET threads = (SELECT count(*) FROM threads WHERE forum = NEW.forum) WHERE slug = NEW.forum;
+        RETURN NEW;
+    END;
+$body$ LANGUAGE plpgsql;
+
+CREATE TRIGGER forum_posts_count
+    AFTER INSERT OR DELETE
+    ON posts
+    FOR EACH ROW
+    EXECUTE PROCEDURE update_posts_count();
+
+CREATE TRIGGER forum_threads_count
+    AFTER INSERT OR DELETE
+    ON threads
+    FOR EACH ROW
+EXECUTE PROCEDURE update_threads_count();

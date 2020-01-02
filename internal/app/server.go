@@ -7,6 +7,9 @@ import (
 	forumHttp "technopark-db-forum/internal/app/forum/delivery/http"
 	"technopark-db-forum/internal/app/forum/repository"
 	forumUsecase "technopark-db-forum/internal/app/forum/usecase"
+	postHttp "technopark-db-forum/internal/app/post/delivery/http"
+	postRepository "technopark-db-forum/internal/app/post/repository"
+	postUsecase "technopark-db-forum/internal/app/post/usecase"
 	threadHttp "technopark-db-forum/internal/app/thread/delivery/http"
 	threadRepository "technopark-db-forum/internal/app/thread/repository"
 	threadUsecase "technopark-db-forum/internal/app/thread/usecase"
@@ -38,14 +41,17 @@ func (s *Server) ConfigureServer(db *sql.DB) {
 	forumRep := forumRepository.NewForumRepository(db)
 	userRep := userRepository.NewUserRepository(db)
 	threadRep := threadRepository.NewThreadRepository(db)
+	postRep := postRepository.NewPostRepository(db)
 
 	forumUse := forumUsecase.NewForumUsecase(forumRep, userRep, threadRep)
 	userUse := userUsecase.NewForumUsecase(userRep)
 	threadUse := threadUsecase.NewThreadUsecase(threadRep)
+	postUse := postUsecase.NewPostUsecase(postRep)
 
 	s.Mux.Use(middleware.CORSMiddleware)
 
 	forumHttp.NewForumHandler(s.Mux, forumUse)
 	userHttp.NewUserHandler(s.Mux, userUse)
 	threadHttp.NewThreadHandler(s.Mux, threadUse)
+	postHttp.NewPostHandler(s.Mux, postUse)
 }

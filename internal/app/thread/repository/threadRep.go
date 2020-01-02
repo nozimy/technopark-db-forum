@@ -179,7 +179,7 @@ func (t ThreadRepository) UpdateThread(id int, slug string, threadUpdate *model.
 	th := &model.Thread{}
 
 	err := t.db.QueryRow(
-		"UPDATE threads SET title = $1, message = $2 WHERE id=$3 OR slug=$4 RETURNING slug, title, message, forum, author, created, votes, id",
+		"UPDATE threads SET title = $1, message = $2 WHERE id=$3 OR LOWER(slug)=LOWER($4) RETURNING slug, title, message, forum, author, created, votes, id",
 		threadUpdate.Title,
 		threadUpdate.Message,
 		id,
