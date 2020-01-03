@@ -21,6 +21,8 @@ func NewServiceHandler(m *mux.Router, u service.Usecase) {
 }
 
 func (h *ServiceHandler) HandleServiceClear(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	err := h.ServiceUsecase.ClearAll()
 
 	if err != nil {
@@ -32,6 +34,8 @@ func (h *ServiceHandler) HandleServiceClear(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *ServiceHandler) HandleServiceGetStatus(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
 	status, err := h.ServiceUsecase.GetStatus()
 
 	if err != nil || status == nil {
