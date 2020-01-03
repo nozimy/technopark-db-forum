@@ -2,9 +2,9 @@ package postRepository
 
 import (
 	"database/sql"
+	"github.com/nozimy/technopark-db-forum/internal/app/post"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"strconv"
-	"technopark-db-forum/internal/app/post"
-	"technopark-db-forum/internal/model"
 )
 
 type PostRepository struct {

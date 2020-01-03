@@ -3,11 +3,11 @@ package forumHttp
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/nozimy/technopark-db-forum/internal/app/forum"
+	"github.com/nozimy/technopark-db-forum/internal/app/respond"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"github.com/pkg/errors"
 	"net/http"
-	"technopark-db-forum/internal/app/forum"
-	"technopark-db-forum/internal/app/respond"
-	"technopark-db-forum/internal/model"
 )
 
 type ForumHandler struct {

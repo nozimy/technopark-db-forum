@@ -1,7 +1,7 @@
 package forum
 
 import (
-	"technopark-db-forum/internal/model"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 )
 
 type Repository interface {

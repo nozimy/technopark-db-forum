@@ -1,6 +1,6 @@
 package post
 
-import "technopark-db-forum/internal/model"
+import "github.com/nozimy/technopark-db-forum/internal/model"
 
 type Repository interface {
 	FindById(id string, includeUser, includeForum, includeThread bool) (*model.PostFull, error)

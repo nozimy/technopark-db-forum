@@ -2,9 +2,9 @@ package apiserver
 
 import (
 	"database/sql"
+	"github.com/nozimy/technopark-db-forum/internal/store/create"
 	"log"
 	"net/http"
-	"technopark-db-forum/internal/store/create"
 )
 
 func Start() error {

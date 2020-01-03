@@ -3,11 +3,11 @@ package userHttp
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/nozimy/technopark-db-forum/internal/app/respond"
+	"github.com/nozimy/technopark-db-forum/internal/app/user"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"github.com/pkg/errors"
 	"net/http"
-	"technopark-db-forum/internal/app/respond"
-	"technopark-db-forum/internal/app/user"
-	"technopark-db-forum/internal/model"
 )
 
 type UserHandler struct {

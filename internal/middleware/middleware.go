@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"github.com/nozimy/technopark-db-forum/internal/app/respond"
 	"net/http"
-	"technopark-db-forum/internal/app/respond"
 )
 
 func CORSMiddleware(next http.Handler) http.Handler {

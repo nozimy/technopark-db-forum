@@ -1,11 +1,11 @@
 package threadUsecase
 
 import (
+	"github.com/nozimy/technopark-db-forum/internal/app/thread"
+	"github.com/nozimy/technopark-db-forum/internal/app/user"
+	"github.com/nozimy/technopark-db-forum/internal/app/validation"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"strconv"
-	"technopark-db-forum/internal/app/thread"
-	"technopark-db-forum/internal/app/user"
-	"technopark-db-forum/internal/app/validation"
-	"technopark-db-forum/internal/model"
 )
 
 type ThreadUsecase struct {

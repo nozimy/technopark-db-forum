@@ -2,9 +2,9 @@ package serviceHttp
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/nozimy/technopark-db-forum/internal/app/respond"
+	"github.com/nozimy/technopark-db-forum/internal/app/service"
 	"net/http"
-	"technopark-db-forum/internal/app/respond"
-	"technopark-db-forum/internal/app/service"
 )
 
 type ServiceHandler struct {

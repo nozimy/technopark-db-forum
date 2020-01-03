@@ -2,8 +2,8 @@ package forumRepository
 
 import (
 	"database/sql"
-	"technopark-db-forum/internal/app/forum"
-	"technopark-db-forum/internal/model"
+	"github.com/nozimy/technopark-db-forum/internal/app/forum"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 )
 
 type ForumRepository struct {

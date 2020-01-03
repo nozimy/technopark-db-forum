@@ -3,8 +3,8 @@ package threadRepository
 import (
 	"database/sql"
 	"github.com/lib/pq"
-	"technopark-db-forum/internal/app/thread"
-	"technopark-db-forum/internal/model"
+	"github.com/nozimy/technopark-db-forum/internal/app/thread"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"time"
 )
 

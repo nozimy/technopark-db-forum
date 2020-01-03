@@ -1,11 +1,11 @@
 package postUsecase
 
 import (
+	"github.com/nozimy/technopark-db-forum/internal/app/post"
+	"github.com/nozimy/technopark-db-forum/internal/app/validation"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"github.com/pkg/errors"
 	"strings"
-	"technopark-db-forum/internal/app/post"
-	"technopark-db-forum/internal/app/validation"
-	"technopark-db-forum/internal/model"
 )
 
 type PostUsecase struct {

@@ -2,8 +2,8 @@ package serviceRepository
 
 import (
 	"database/sql"
-	"technopark-db-forum/internal/app/service"
-	"technopark-db-forum/internal/model"
+	"github.com/nozimy/technopark-db-forum/internal/app/service"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 )
 
 type ServiceRepository struct {

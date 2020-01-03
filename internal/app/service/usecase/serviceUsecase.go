@@ -1,9 +1,9 @@
 package serviceUsecase
 
 import (
+	"github.com/nozimy/technopark-db-forum/internal/app/service"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"github.com/pkg/errors"
-	"technopark-db-forum/internal/app/service"
-	"technopark-db-forum/internal/model"
 )
 
 type ServiceUsecase struct {

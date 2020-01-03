@@ -3,10 +3,10 @@ package threadHttp
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/nozimy/technopark-db-forum/internal/app/respond"
+	"github.com/nozimy/technopark-db-forum/internal/app/thread"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"net/http"
-	"technopark-db-forum/internal/app/respond"
-	"technopark-db-forum/internal/app/thread"
-	"technopark-db-forum/internal/model"
 )
 
 type ThreadHandler struct {

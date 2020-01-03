@@ -1,17 +1,22 @@
-FROM golang:1.13.4-stretch
+FROM golang:1.13.4-stretch AS build
 
 # Копируем исходный код в Docker-контейнер
-ADD golang/ /opt/build/golang/
-ADD common/ /opt/build/commnon/
-
-# Собираем генераторы
-RUN go mod vendor
-#RUN go install ./vendor/github.com/go-swagger/go-swagger/cmd/swagger
-#RUN go install ./vendor/github.com/jteeuwen/go-bindata/go-bindata
+#ADD golang/ /opt/build/golang/
+#ADD common/ /opt/build/commnon/
 
 # Собираем и устанавливаем пакет
-RUN go generate -x tools.go
-RUN go install ./cmd/technopark-db-forum
+#RUN go generate -x tools.go
+#RUN go install ./cmd/technopark-db-forum
+
+WORKDIR /usr/src/tech-db
+
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
+
+COPY . .
+RUN make build
+
 
 FROM ubuntu:18.04 AS release
 
@@ -53,10 +58,11 @@ USER root
 # Объявлем порт сервера
 EXPOSE 5000
 
+COPY ./assets/db/postgres/base.sql ./assets/db/postgres/base.sql
 # Собранный ранее сервер
-COPY --from=build go/bin/technopark-db-forum /usr/bin/
+COPY --from=build /usr/src/tech-db/technopark-db-forum .
 
 #
 # Запускаем PostgreSQL и сервер
 #
-CMD service postgresql start && technopark-db-forum --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && ./technopark-db-forum --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker

@@ -4,9 +4,11 @@
 - https://tech-db-forum.bozaro.ru/
 
 - sudo docker build -t nozimdev/tech-db .
-- docker stop nozimdev/tech-db
-- docker rm - nozimdev/tech-db
-- docker run -p 5000:5000 --name nozimdev/tech-db -t nozimdev/tech-db 
+- docker stop nozimdev
+- docker rm nozimdev
+- //docker run -p 5000:5000 --name nozimdev/tech-db -t nozimdev/tech-db
+- sudo docker run -p 5000:5000 --name nozimdev -t nozimdev/tech-db
+ 
 
 # [tech-db-forum](https://github.com/bozaro/tech-db-forum/)
 

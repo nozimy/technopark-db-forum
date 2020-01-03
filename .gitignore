@@ -8,4 +8,4 @@
 
 # Go mod vendoring
 /vendor/
-go.sum
+#go.sum

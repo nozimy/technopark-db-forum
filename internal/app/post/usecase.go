@@ -1,6 +1,6 @@
 package post
 
-import "technopark-db-forum/internal/model"
+import "github.com/nozimy/technopark-db-forum/internal/model"
 
 type Usecase interface {
 	FindById(id string, params map[string][]string) (*model.PostFull, error)

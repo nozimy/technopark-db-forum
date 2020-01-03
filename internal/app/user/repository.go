@@ -1,6 +1,6 @@
 package user
 
-import "technopark-db-forum/internal/model"
+import "github.com/nozimy/technopark-db-forum/internal/model"
 
 type Repository interface {
 	Create(forum *model.User) error

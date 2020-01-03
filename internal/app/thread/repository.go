@@ -1,6 +1,6 @@
 package thread
 
-import "technopark-db-forum/internal/model"
+import "github.com/nozimy/technopark-db-forum/internal/model"
 
 type Repository interface {
 	CreateThread(thread *model.NewThread) (*model.Thread, error)

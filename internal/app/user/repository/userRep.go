@@ -2,8 +2,8 @@ package userRepository
 
 import (
 	"database/sql"
-	"technopark-db-forum/internal/app/user"
-	"technopark-db-forum/internal/model"
+	"github.com/nozimy/technopark-db-forum/internal/app/user"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 )
 
 type UserRepository struct {

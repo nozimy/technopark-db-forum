@@ -1,6 +1,6 @@
 package thread
 
-import "technopark-db-forum/internal/model"
+import "github.com/nozimy/technopark-db-forum/internal/model"
 
 type Usecase interface {
 	CreatePosts(threadSlugOrId string, posts *model.Posts) (*model.Posts, int, error)

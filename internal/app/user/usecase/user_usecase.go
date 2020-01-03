@@ -1,9 +1,9 @@
 package userUsecase
 
 import (
-	"technopark-db-forum/internal/app/user"
-	"technopark-db-forum/internal/app/validation"
-	"technopark-db-forum/internal/model"
+	"github.com/nozimy/technopark-db-forum/internal/app/user"
+	"github.com/nozimy/technopark-db-forum/internal/app/validation"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 )
 
 type UserUsecase struct {

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	_ "github.com/lib/pq"
+	apiserver "github.com/nozimy/technopark-db-forum/internal/app"
 	"log"
-	apiserver "technopark-db-forum/internal/app"
 )
 
 func main() {

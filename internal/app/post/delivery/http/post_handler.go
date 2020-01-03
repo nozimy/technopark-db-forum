@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/gorilla/mux"
+	"github.com/nozimy/technopark-db-forum/internal/app/post"
+	"github.com/nozimy/technopark-db-forum/internal/app/respond"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"net/http"
-	"technopark-db-forum/internal/app/post"
-	"technopark-db-forum/internal/app/respond"
-	"technopark-db-forum/internal/model"
 )
 
 type PostHandler struct {

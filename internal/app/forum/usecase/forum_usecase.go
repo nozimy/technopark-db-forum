@@ -1,11 +1,11 @@
 package forumUsecase
 
 import (
+	"github.com/nozimy/technopark-db-forum/internal/app/forum"
+	"github.com/nozimy/technopark-db-forum/internal/app/thread"
+	"github.com/nozimy/technopark-db-forum/internal/app/user"
+	"github.com/nozimy/technopark-db-forum/internal/model"
 	"github.com/pkg/errors"
-	"technopark-db-forum/internal/app/forum"
-	"technopark-db-forum/internal/app/thread"
-	"technopark-db-forum/internal/app/user"
-	"technopark-db-forum/internal/model"
 )
 
 type ForumUsecase struct {
