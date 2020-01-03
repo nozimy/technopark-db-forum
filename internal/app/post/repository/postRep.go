@@ -35,7 +35,7 @@ func (p PostRepository) Update(id string, message string) (*model.Post, error) {
 	return postObj, nil
 }
 
-func (p PostRepository) FindById(id string) (*model.PostFull, error) {
+func (p PostRepository) FindById(id string, includeUser, includeForum, includeThread bool) (*model.PostFull, error) {
 	postObj := &model.PostFull{}
 	postObj.Post = &model.Post{}
 
@@ -54,6 +54,56 @@ func (p PostRepository) FindById(id string) (*model.PostFull, error) {
 		&postObj.Post.IsEdited,
 	); err != nil {
 		return nil, err
+	}
+
+	if includeUser {
+		postObj.Author = &model.User{}
+		if err := p.db.QueryRow(
+			"SELECT about, email, fullname, nickname FROM users WHERE LOWER(nickname) = LOWER($1)",
+			postObj.Post.Author,
+		).Scan(
+			&postObj.Author.About,
+			&postObj.Author.Email,
+			&postObj.Author.Fullname,
+			&postObj.Author.Nickname,
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	if includeForum {
+		postObj.Forum = &model.Forum{}
+		if err := p.db.QueryRow(
+			"SELECT usernick, title, slug, posts, threads FROM forums WHERE LOWER(slug) = LOWER($1)",
+			postObj.Post.Forum,
+		).Scan(
+			&postObj.Forum.User,
+			&postObj.Forum.Title,
+			&postObj.Forum.Slug,
+			&postObj.Forum.Posts,
+			&postObj.Forum.Threads,
+		); err != nil {
+			return nil, err
+		}
+	}
+
+	if includeThread {
+		postObj.Thread = &model.Thread{}
+		if err := p.db.QueryRow(
+			"SELECT forum, slug, title, author, message, id, created, votes FROM threads WHERE id = $1",
+			postObj.Post.Thread,
+		).Scan(
+			&postObj.Thread.Forum,
+			&postObj.Thread.Slug,
+			&postObj.Thread.Title,
+			&postObj.Thread.Author,
+			&postObj.Thread.Message,
+			&postObj.Thread.ID,
+			&postObj.Thread.Created,
+			&postObj.Thread.Votes,
+		); err != nil {
+			return nil, err
+		}
 	}
 
 	return postObj, nil

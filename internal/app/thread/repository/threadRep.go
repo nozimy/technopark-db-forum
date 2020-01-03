@@ -214,7 +214,7 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 	}
 
 	//stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(parent, thread, forum, author, created, message) SELECT $1, $2, $3, $4, $5, $6 WHERE EXISTS(SELECT id FROM posts WHERE id = $1) RETURNING id, parent, thread, forum, author, created, message, isedited")
-	stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) FROM posts WHERE id = $1 RETURNING id, parent, thread, forum, author, created, message, isedited")
+	stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) FROM posts WHERE id = $1 AND thread = $2 RETURNING id, parent, thread, forum, author, created, message, isedited")
 	if err != nil {
 		return nil, err
 	}

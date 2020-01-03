@@ -3,16 +3,24 @@ package threadUsecase
 import (
 	"strconv"
 	"technopark-db-forum/internal/app/thread"
+	"technopark-db-forum/internal/app/user"
+	"technopark-db-forum/internal/app/validation"
 	"technopark-db-forum/internal/model"
 )
 
 type ThreadUsecase struct {
 	threadRep thread.Repository
+	userRep   user.Repository
 }
 
 func (t ThreadUsecase) Vote(threadSlugOrId string, vote *model.Vote) (*model.Thread, error) {
 	threadObj, err := t.FindByIdOrSlug(threadSlugOrId)
 	if err != nil {
+		return nil, err
+	}
+
+	userObj, err := t.userRep.FindByNickname(vote.Nickname)
+	if userObj == nil || err != nil {
 		return nil, err
 	}
 
@@ -66,7 +74,24 @@ func (t ThreadUsecase) GetThreadPosts(threadSlugOrId string, params map[string][
 func (t ThreadUsecase) UpdateThread(threadSlugOrId string, threadUpdate *model.ThreadUpdate) (*model.Thread, error) {
 	id, _ := strconv.Atoi(threadSlugOrId)
 
-	threadObj, err := t.threadRep.UpdateThread(id, threadSlugOrId, threadUpdate)
+	threadObj, err := t.threadRep.FindByIdOrSlug(id, threadSlugOrId)
+	if err != nil {
+		return nil, err
+	}
+
+	if validation.IsEmptyString(threadUpdate.Title) && validation.IsEmptyString(threadUpdate.Message) {
+		return threadObj, nil
+	}
+
+	if validation.IsEmptyString(threadUpdate.Title) {
+		threadUpdate.Title = threadObj.Title
+	}
+
+	if validation.IsEmptyString(threadUpdate.Message) {
+		threadUpdate.Message = threadObj.Message
+	}
+
+	threadObj, err = t.threadRep.UpdateThread(id, threadSlugOrId, threadUpdate)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +116,14 @@ func (t ThreadUsecase) CreatePosts(threadSlugOrId string, posts *model.Posts) (*
 		return nil, 404, err
 	}
 
+	// todo: Maybe Goroutines?
+	for _, post := range *posts {
+		userObj, err := t.userRep.FindByNickname(post.Author)
+		if userObj == nil || err != nil {
+			return nil, 404, err
+		}
+	}
+
 	posts, err = t.threadRep.CreatePosts(threadObj, posts)
 	if err != nil {
 		return nil, 409, err
@@ -99,9 +132,10 @@ func (t ThreadUsecase) CreatePosts(threadSlugOrId string, posts *model.Posts) (*
 	return posts, 201, nil
 }
 
-func NewThreadUsecase(t thread.Repository) thread.Usecase {
+func NewThreadUsecase(t thread.Repository, u user.Repository) thread.Usecase {
 	return &ThreadUsecase{
 		threadRep: t,
+		userRep:   u,
 	}
 }
 

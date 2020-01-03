@@ -1,9 +1,9 @@
 package serviceHttp
 
 import (
-	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
+	"technopark-db-forum/internal/app/respond"
 	"technopark-db-forum/internal/app/service"
 )
 
@@ -21,9 +21,23 @@ func NewServiceHandler(m *mux.Router, u service.Usecase) {
 }
 
 func (h *ServiceHandler) HandleServiceClear(w http.ResponseWriter, r *http.Request) {
-	_, _ = fmt.Fprintf(w, "Hello: %v\n", "World")
+	err := h.ServiceUsecase.ClearAll()
+
+	if err != nil {
+		respond.Error(w, r, http.StatusNotFound, err)
+		return
+	}
+
+	respond.Respond(w, r, http.StatusOK, nil)
 }
 
 func (h *ServiceHandler) HandleServiceGetStatus(w http.ResponseWriter, r *http.Request) {
-	_, _ = fmt.Fprintf(w, "Hello: %v\n", "World")
+	status, err := h.ServiceUsecase.GetStatus()
+
+	if err != nil || status == nil {
+		respond.Error(w, r, http.StatusNotFound, err)
+		return
+	}
+
+	respond.Respond(w, r, http.StatusOK, status)
 }

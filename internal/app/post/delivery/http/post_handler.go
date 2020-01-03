@@ -53,7 +53,7 @@ func (h *PostHandler) HandleGetPostDetails(w http.ResponseWriter, r *http.Reques
 	vars := mux.Vars(r)
 	id := vars["id"]
 
-	postObj, err := h.PostUsecase.FindById(id)
+	postObj, err := h.PostUsecase.FindById(id, r.URL.Query())
 
 	if err != nil || postObj == nil {
 		respond.Error(w, r, http.StatusNotFound, errors.New("Can't find post with id "+id+"\n"))
