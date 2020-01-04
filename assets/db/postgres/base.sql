@@ -1,6 +1,30 @@
-DROP TABLE IF EXISTS users;
+DROP INDEX IF EXISTS idx_users_email_uindex;
+DROP INDEX IF EXISTS idx_users_nickname_uindex;
+DROP INDEX IF EXISTS idx_forums_slug_uindex;
+DROP INDEX IF EXISTS idx_forums_userNick_unique;;
+DROP INDEX IF EXISTS idx_threads_slug;
+DROP INDEX IF EXISTS idx_threads_forum;
+DROP INDEX IF EXISTS idx_posts_forum;
+DROP INDEX IF EXISTS idx_posts_parent;
+DROP INDEX IF EXISTS idx_posts_path;
+DROP INDEX IF EXISTS idx_posts_thread;
+DROP INDEX IF EXISTS idx_posts_thread_id;
+
+-- DROP TRIGGER IF EXISTS forum_posts_count_ins ON posts;
+-- DROP TRIGGER IF EXISTS forum_posts_count_del ON posts;
+-- DROP TRIGGER IF EXISTS forum_threads_count_ins ON threads;
+-- DROP TRIGGER IF EXISTS forum_threads_count_del ON threads;
+DROP TRIGGER IF EXISTS on_vote_insert ON votes;
+DROP TRIGGER IF EXISTS on_vote_update ON votes;
+
+-- DROP FUNCTION IF EXISTS fn_update_threads_count();
+-- DROP FUNCTION IF EXISTS fn_update_posts_count();
+DROP FUNCTION IF EXISTS fn_update_thread_votes_ins();
+DROP FUNCTION IF EXISTS fn_update_thread_votes_upd();
+
+DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS forums;
-DROP TABLE IF EXISTS threads;
+DROP TABLE IF EXISTS threads CASCADE;
 DROP TABLE IF EXISTS posts;
 DROP TABLE IF EXISTS votes;
 
@@ -8,14 +32,16 @@ DROP TABLE IF EXISTS votes;
 CREATE TABLE IF NOT EXISTS users
 (
     id       bigserial not null primary key,
-    nickname varchar   not null unique,
-    about    varchar,
-    email    varchar   not null,
-    fullname varchar   not null
+    nickname varchar(50)   not null unique,
+    about    text,
+    email    varchar(50)   not null,
+    fullname varchar(100)   not null
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_uindex
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex
     ON users (LOWER(email));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex
+    ON users (LOWER(nickname));
 
 CREATE TABLE IF NOT EXISTS forums
 (
@@ -27,8 +53,10 @@ CREATE TABLE IF NOT EXISTS forums
     threads  int default 0
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS forums_slug_uindex
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_uindex
     ON forums (LOWER(slug));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique
+    ON forums (LOWER(userNick));
 
 CREATE TABLE IF NOT EXISTS threads
 (
@@ -42,51 +70,117 @@ CREATE TABLE IF NOT EXISTS threads
     created timestamptz DEFAULT now()
 );
 
+CREATE INDEX IF NOT EXISTS idx_threads_slug
+    ON threads (LOWER(slug));
+CREATE INDEX IF NOT EXISTS idx_threads_forum
+    ON threads (LOWER(forum));
+
 CREATE TABLE IF NOT EXISTS posts
 (
     id       bigserial not null primary key,
     parent   bigint             DEFAULT NULL,
-    thread   int,
+    path     bigint[]  NOT NULL DEFAULT '{0}',
+    thread   int REFERENCES threads(id) NOT NULL,
     forum    varchar,
     author   varchar,
     created  timestamptz        DEFAULT now(),
     isEdited bool               DEFAULT FALSE,
-    message  text,
-    path     bigint[]  NOT NULL DEFAULT '{0}'
+    message  text
 );
--- CREATE INDEX idx_path ON posts (path);
-CREATE INDEX IF NOT EXISTS idx_path ON posts USING GIN (path);
+CREATE INDEX IF NOT EXISTS idx_posts_path ON posts USING GIN (path);
+CREATE INDEX IF NOT EXISTS idx_posts_thread ON posts (thread);
+CREATE INDEX IF NOT EXISTS idx_posts_forum ON posts (forum);
+CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts (parent);
+CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts (thread, id);
 
 CREATE TABLE IF NOT EXISTS votes
 (
-    nickname varchar  NOT NULL,
-    thread   int      NOT NULL,
+    nickname varchar  REFERENCES users(nickname) NOT NULL,
+    thread   int      REFERENCES threads(id) NOT NULL,
     voice    smallint NOT NULL CHECK (voice = 1 OR voice = -1),
     PRIMARY KEY (nickname, thread)
 );
+CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique
+    ON votes (LOWER(nickname), thread);
 
-CREATE OR REPLACE FUNCTION update_posts_count() RETURNS trigger AS $update_posts_count$
+CREATE FUNCTION fn_update_thread_votes_ins()
+    RETURNS TRIGGER AS '
     BEGIN
-        UPDATE forums SET posts = (SELECT count(*) FROM posts WHERE forum = NEW.forum) WHERE slug = NEW.forum;
-        RETURN NEW;
+        UPDATE threads
+        SET
+            votes = votes + NEW.voice
+        WHERE id = NEW.thread;
+        RETURN NULL;
     END;
-$update_posts_count$ LANGUAGE plpgsql;
+' LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION update_threads_count() RETURNS trigger AS $body$
+
+CREATE TRIGGER on_vote_insert
+    AFTER INSERT ON votes
+    FOR EACH ROW EXECUTE PROCEDURE fn_update_thread_votes_ins();
+
+CREATE FUNCTION fn_update_thread_votes_upd()
+    RETURNS TRIGGER AS '
     BEGIN
-        UPDATE forums SET threads = (SELECT count(*) FROM threads WHERE forum = NEW.forum) WHERE slug = NEW.forum;
-        RETURN NEW;
+        IF OLD.voice = NEW.voice
+        THEN
+            RETURN NULL;
+        END IF;
+        UPDATE threads
+        SET
+            votes = votes + CASE WHEN NEW.voice = -1
+                                     THEN -2
+                                 ELSE 2 END
+        WHERE id = NEW.thread;
+        RETURN NULL;
     END;
-$body$ LANGUAGE plpgsql;
+' LANGUAGE plpgsql;
 
-CREATE TRIGGER forum_posts_count
-    AFTER INSERT OR DELETE
-    ON posts
-    FOR EACH ROW
-    EXECUTE PROCEDURE update_posts_count();
+CREATE TRIGGER on_vote_update
+    AFTER UPDATE ON votes
+    FOR EACH ROW EXECUTE PROCEDURE fn_update_thread_votes_upd();
 
-CREATE TRIGGER forum_threads_count
-    AFTER INSERT OR DELETE
-    ON threads
-    FOR EACH ROW
-EXECUTE PROCEDURE update_threads_count();
+
+-- CREATE OR REPLACE FUNCTION fn_update_posts_count() RETURNS trigger AS $update_posts_count$
+--     BEGIN
+--         UPDATE forums AS f SET posts = (SELECT count(id) FROM posts WHERE forum = f.slug)
+--         WHERE slug = (SELECT forum FROM new_table LIMIT 1);
+--         RETURN NULL;
+--     END;
+-- $update_posts_count$ LANGUAGE plpgsql;
+--
+-- CREATE OR REPLACE FUNCTION fn_update_threads_count() RETURNS trigger AS $body$
+--     BEGIN
+--         UPDATE forums AS f SET threads = (SELECT count(id) FROM threads WHERE forum = f.slug)
+--         WHERE slug = (SELECT forum FROM new_table LIMIT 1);
+--         RETURN NULL;
+--     END;
+-- $body$ LANGUAGE plpgsql;
+
+-- CREATE TRIGGER forum_posts_count_ins
+--     AFTER INSERT
+--     ON posts
+--     REFERENCING NEW TABLE AS new_table
+--     FOR EACH STATEMENT
+--     EXECUTE PROCEDURE fn_update_posts_count();
+--
+-- CREATE TRIGGER forum_posts_count_del
+--     AFTER DELETE
+--     ON posts
+--     REFERENCING OLD TABLE AS new_table
+--     FOR EACH STATEMENT
+--     EXECUTE PROCEDURE fn_update_posts_count();
+
+-- CREATE TRIGGER forum_threads_count_ins
+--     AFTER INSERT
+--     ON threads
+--     REFERENCING NEW TABLE AS new_table
+--     FOR EACH STATEMENT
+--     EXECUTE PROCEDURE fn_update_threads_count();
+--
+-- CREATE TRIGGER forum_threads_count_del
+--     AFTER DELETE
+--     ON threads
+--     REFERENCING OLD TABLE AS new_table
+--     FOR EACH STATEMENT
+--     EXECUTE PROCEDURE fn_update_threads_count();

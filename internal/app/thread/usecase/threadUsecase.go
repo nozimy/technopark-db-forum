@@ -19,10 +19,10 @@ func (t ThreadUsecase) Vote(threadSlugOrId string, vote *model.Vote) (*model.Thr
 		return nil, err
 	}
 
-	userObj, err := t.userRep.FindByNickname(vote.Nickname)
-	if userObj == nil || err != nil {
-		return nil, err
-	}
+	//userObj, err := t.userRep.FindByNickname(vote.Nickname)
+	//if userObj == nil || err != nil {
+	//	return nil, err
+	//}
 
 	threadObj, err = t.threadRep.Vote(threadObj, vote)
 	if err != nil {
@@ -117,15 +117,19 @@ func (t ThreadUsecase) CreatePosts(threadSlugOrId string, posts *model.Posts) (*
 	}
 
 	// todo: Maybe Goroutines?
-	for _, post := range *posts {
-		userObj, err := t.userRep.FindByNickname(post.Author)
-		if userObj == nil || err != nil {
-			return nil, 404, err
-		}
-	}
+	//for _, post := range *posts {
+	//	userObj, err := t.userRep.FindByNickname(post.Author)
+	//	if userObj == nil || err != nil {
+	//		return nil, 404, err
+	//	}
+	//}
 
 	posts, err = t.threadRep.CreatePosts(threadObj, posts)
 	if err != nil {
+		if err.Error() == "404" {
+			return nil, 404, err
+		}
+
 		return nil, 409, err
 	}
 

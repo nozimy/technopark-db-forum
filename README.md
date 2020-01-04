@@ -10,6 +10,9 @@
 - sudo docker run -p 5000:5000 --name nozimdev -t nozimdev/tech-db
  
 
+- нагрузочное тестирование `./tech-db-forum perf -u http://localhost:5000/api -i -t=8`
+
+
 # [tech-db-forum](https://github.com/bozaro/tech-db-forum/)
 
 Тестовое задание для реализации проекта "Форумы" на курсе по базам данных в Технопарке Mail.ru (https://park.mail.ru).

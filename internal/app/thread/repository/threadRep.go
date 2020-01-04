@@ -2,9 +2,12 @@ package threadRepository
 
 import (
 	"database/sql"
+	"errors"
 	"github.com/lib/pq"
 	"github.com/nozimy/technopark-db-forum/internal/app/thread"
 	"github.com/nozimy/technopark-db-forum/internal/model"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,44 +21,49 @@ func (t ThreadRepository) Vote(thread *model.Thread, vote *model.Vote) (*model.T
 		return nil, err
 	}
 
-	//stmt, err := tx.Prepare("INSERT INTO votes(nickname, voice, thread) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT votes_pkey DO UPDATE SET voice = $2")
-	stmt, err := tx.Prepare("UPDATE votes SET voice = $3 WHERE LOWER(nickname) = LOWER($1) AND thread=$2")
+	stmt, err := tx.Prepare("INSERT INTO votes(nickname, voice, thread) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT votes_pkey DO UPDATE SET voice = $2")
+	//stmt, err := tx.Prepare("UPDATE votes SET voice = $3 WHERE LOWER(nickname) = LOWER($1) AND thread=$2")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	stmtThread, err := tx.Prepare("UPDATE threads SET votes = (SELECT sum(voice) from votes WHERE thread = $1) WHERE id=$1 RETURNING slug, title, message, forum, author, created, votes, id")
+	//stmtThread, err := tx.Prepare("UPDATE threads SET votes = (SELECT sum(voice) from votes WHERE thread = $1) WHERE id=$1 RETURNING slug, title, message, forum, author, created, votes, id")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//defer stmtThread.Close()
+
+	//row := tx.QueryRow("SELECT voice FROM votes WHERE LOWER(nickname) = LOWER($1) AND thread=$2", vote.Nickname, thread.ID)
+	//var prevVoice int32
+	//if err := row.Scan(&prevVoice); err != nil {
+	//	_, err = tx.Exec("INSERT INTO votes(nickname, thread, voice) VALUES ($1, $2, $3::smallint)", vote.Nickname, thread.ID, vote.Voice)
+	//	if err != nil {
+	//		tx.Rollback()
+	//		return nil, err
+	//	}
+	//} else {
+	_, err = stmt.Exec(vote.Nickname, vote.Voice, thread.ID)
 	if err != nil {
+		tx.Rollback()
 		return nil, err
 	}
-	defer stmtThread.Close()
+	//}
 
-	row := tx.QueryRow("SELECT voice FROM votes WHERE LOWER(nickname) = LOWER($1) AND thread=$2", vote.Nickname, thread.ID)
-	var prevVoice int32
-	if err := row.Scan(&prevVoice); err != nil {
-		_, err = tx.Exec("INSERT INTO votes(nickname, thread, voice) VALUES ($1, $2, $3::smallint)", vote.Nickname, thread.ID, vote.Voice)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-	} else {
-		_, err = stmt.Exec(vote.Nickname, thread.ID, vote.Voice)
-		if err != nil {
-			tx.Rollback()
-			return nil, err
-		}
-	}
-	rowT := stmtThread.QueryRow(thread.ID)
+	//rowT := stmtThread.QueryRow(thread.ID)
+	//err = rowT.Scan(
+	//	&thread.Slug,
+	//	&thread.Title,
+	//	&thread.Message,
+	//	&thread.Forum,
+	//	&thread.Author,
+	//	&thread.Created,
+	//	&thread.Votes,
+	//	&thread.ID,
+	//)
+	rowT := tx.QueryRow("SELECT votes FROM threads WHERE id = $1", thread.ID)
 	err = rowT.Scan(
-		&thread.Slug,
-		&thread.Title,
-		&thread.Message,
-		&thread.Forum,
-		&thread.Author,
-		&thread.Created,
 		&thread.Votes,
-		&thread.ID,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -208,45 +216,137 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 		return nil, err
 	}
 
-	stmt, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, ARRAY[currval(pg_get_serial_sequence('posts', 'id'))::bigint] RETURNING id, parent, thread, forum, author, created, message, isedited")
-	if err != nil {
-		return nil, err
-	}
-
-	//stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(parent, thread, forum, author, created, message) SELECT $1, $2, $3, $4, $5, $6 WHERE EXISTS(SELECT id FROM posts WHERE id = $1) RETURNING id, parent, thread, forum, author, created, message, isedited")
-	stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) FROM posts WHERE id = $1 AND thread = $2 RETURNING id, parent, thread, forum, author, created, message, isedited")
-	if err != nil {
-		return nil, err
-	}
-
-	defer stmt.Close()
-	defer stmtWithParentCheck.Close()
+	//stmt, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) " +
+	//	"SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, ARRAY[currval(pg_get_serial_sequence('posts', 'id'))::bigint] " +
+	//	"RETURNING id, parent, thread, forum, author, created, message, isedited")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	////stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(parent, thread, forum, author, created, message) SELECT $1, $2, $3, $4, $5, $6 WHERE EXISTS(SELECT id FROM posts WHERE id = $1) RETURNING id, parent, thread, forum, author, created, message, isedited")
+	//stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) " +
+	//	//"VALUES(nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, (SELECT path FROM posts WHERE id = $1 AND thread = $2) || currval(pg_get_serial_sequence('posts', 'id'))::bigint) " +
+	//	"SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) " +
+	//	"FROM posts WHERE id = $1 AND thread = $2 " +
+	//	"RETURNING id, parent, thread, forum, author, created, message, isedited")
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//defer stmt.Close()
+	//defer stmtWithParentCheck.Close()
 
 	now := time.Now()
 
+	sqlStr := "INSERT INTO posts(id, parent, thread, forum, author, created, message, path) VALUES "
+	vals := []interface{}{}
 	for _, post := range *posts {
-		var row *sql.Row
-		if post.Parent == 0 {
-			row = stmt.QueryRow(post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
-		} else {
-			row = stmtWithParentCheck.QueryRow(post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
+		var author string
+		err = t.db.QueryRow("SELECT nickname FROM users WHERE LOWER(nickname) = LOWER($1)",
+			post.Author,
+		).Scan(&author)
+		if err != nil || author == "" {
+			_ = tx.Rollback()
+			return nil, errors.New("404")
 		}
 
-		err := row.Scan(
-			&post.ID,
-			&post.Parent,
-			&post.Thread,
-			&post.Forum,
-			&post.Author,
-			&post.Created,
-			&post.Message,
-			&post.IsEdited,
-		)
+		if post.Parent == 0 {
+			sqlStr += "(nextval('posts_id_seq'::regclass), ?, ?, ?, ?, ?, ?, " +
+				"ARRAY[currval(pg_get_serial_sequence('posts', 'id'))::bigint]),"
+			vals = append(vals, post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
+		} else {
+			var parentThreadId int32
+			err = t.db.QueryRow("SELECT thread FROM posts WHERE id = $1",
+				post.Parent,
+			).Scan(&parentThreadId)
+			if err != nil {
+				_ = tx.Rollback()
+				return nil, err
+			}
+			if parentThreadId != thread.ID {
+				_ = tx.Rollback()
+				return nil, errors.New("Parent post was created in another thread")
+			}
+
+			sqlStr += " (nextval('posts_id_seq'::regclass), ?, ?, ?, ?, ?, ?, " +
+				"(SELECT path FROM posts WHERE id = ? AND thread = ?) || " +
+				"currval(pg_get_serial_sequence('posts', 'id'))::bigint),"
+			//sqlStr += "SELECT nextval('posts_id_seq'::regclass), ?, ?, ?, ?, ?, ?, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) " +
+			//	"FROM posts WHERE id = " +string(post.Parent)+ " AND thread = " +string(thread.ID)+ " ,"
+			vals = append(vals, post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message, post.Parent, thread.ID)
+		}
+
+	}
+	sqlStr = strings.TrimSuffix(sqlStr, ",")
+
+	//sqlStr += " RETURNING ( SELECT id, parent, thread, forum, author, created, message, isedited FROM posts WHERE created = ?) "
+	//if len(*posts) == 1 {
+	sqlStr += " RETURNING  id, parent, thread, forum, author, created, message, isedited "
+	//}
+
+	//vals = append(vals, now)
+
+	sqlStr = ReplaceSQL(sqlStr, "?")
+	if len(*posts) > 0 {
+		stmtButch, err := tx.Prepare(sqlStr)
 		if err != nil {
-			tx.Rollback()
 			return nil, err
 		}
+		rows, err := stmtButch.Query(vals...)
+		if err != nil {
+			_ = tx.Rollback()
+			return nil, err
+		}
+		i := 0
+		for rows.Next() {
+			err := rows.Scan(
+				&(*posts)[i].ID,
+				&(*posts)[i].Parent,
+				&(*posts)[i].Thread,
+				&(*posts)[i].Forum,
+				&(*posts)[i].Author,
+				&(*posts)[i].Created,
+				&(*posts)[i].Message,
+				&(*posts)[i].IsEdited,
+			)
+			i += 1
+
+			if err != nil {
+				tx.Rollback()
+				return nil, err
+			}
+		}
 	}
+
+	_, err = tx.Exec("UPDATE forums SET posts = posts + $1 WHERE lower(slug) = lower($2)", len(*posts), thread.Forum)
+	if err != nil {
+		_ = tx.Rollback()
+		return nil, err
+	}
+
+	//for _, post := range *posts {
+	//	var row *sql.Row
+	//	if post.Parent == 0 {
+	//		row = stmt.QueryRow(post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
+	//	} else {
+	//		row = stmtWithParentCheck.QueryRow(post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
+	//	}
+	//
+	//	err := row.Scan(
+	//		&post.ID,
+	//		&post.Parent,
+	//		&post.Thread,
+	//		&post.Forum,
+	//		&post.Author,
+	//		&post.Created,
+	//		&post.Message,
+	//		&post.IsEdited,
+	//	)
+	//	if err != nil {
+	//		tx.Rollback()
+	//		return nil, err
+	//	}
+	//}
 
 	err = tx.Commit()
 	if err != nil {
@@ -294,7 +394,11 @@ func (t ThreadRepository) CreateThread(newThread *model.NewThread) (*model.Threa
 		&th.Votes,
 		&th.ID,
 	)
+	if err != nil {
+		return nil, err
+	}
 
+	_, err = t.db.Exec("UPDATE forums SET threads = threads + 1 WHERE lower(slug) = lower($1)", th.Forum)
 	if err != nil {
 		return nil, err
 	}
@@ -306,7 +410,7 @@ func (t ThreadRepository) FindByIdOrSlug(id int, slug string) (*model.Thread, er
 	th := &model.Thread{}
 
 	err := t.db.QueryRow(
-		"SELECT slug, title, message, forum, author, created, votes, id FROM threads WHERE id=$1 OR LOWER(slug)=LOWER($2) AND slug <> ''",
+		"SELECT slug, title, message, forum, author, created, votes, id FROM threads WHERE id=$1 OR (LOWER(slug)=LOWER($2) AND slug <> '')",
 		id,
 		slug,
 	).Scan(
@@ -329,4 +433,12 @@ func (t ThreadRepository) FindByIdOrSlug(id int, slug string) (*model.Thread, er
 
 func NewThreadRepository(db *sql.DB) thread.Repository {
 	return &ThreadRepository{db}
+}
+
+func ReplaceSQL(old, searchPattern string) string {
+	tmpCount := strings.Count(old, searchPattern)
+	for m := 1; m <= tmpCount; m++ {
+		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
+	}
+	return old
 }
