@@ -1,17 +1,44 @@
-# 
+# Курсовой проект "Форум" по курсу СУБД Технопрка Mail.ru
+
+- собрать контейнер `sudo docker build -t nozimdev/tech-db .`
+- оставить работу контейнера `docker stop nozimdev`
+- удалить контейнер `docker rm nozimdev`
+- запустить контейнер `sudo docker run -p 5000:5000 --name nozimdev -t nozimdev/tech-db`
+ 
+- нагрузочное тестирование `./tech-db-forum perf -u http://localhost:5000/api -i -t=8`. Скомпилированные программы для тестирования см. ниже. 
+
+### Тестирование 
+
+Результат тестирования:
+
+- 2500 rps
+
+Особенности проведения тестов:
+
+- Размер проверямой ветки репозитория, включая всю историю, не более 5MB (это довольно много: эталонная работа имеет размер ~200KB);
+- На сборку контейнера отводится не более 15-ти минут;
+- На заполнение базы отводится не более 15-ти минут;
+- Нагрузка идёт 10 раз в течение 1-ой минуты в 8 потоков. Учитывается лучший результат.
+
+Технические характеристики стенда:
+
+- SSD: Samsung 850 Evo 250GB
+- CPU: Intel® Core™ i5-7400
+
+Лимиты на тестовое окружение:
+
+- Docker host на виртуальная машина QEMU/KVM;
+- OS: Ubuntu 18.04;
+- CPU: 2 core;
+- RAM: 1.5GB у Docker host, 1.0GB у контейнера;
+- SSD: 300 IOPS total;
+
+
+### Задание: 
+
 - https://github.com/bozaro/tech-db-forum
 - https://github.com/bozaro/tech-db-hello
 - https://tech-db-forum.bozaro.ru/
-
-- sudo docker build -t nozimdev/tech-db .
-- docker stop nozimdev
-- docker rm nozimdev
-- //docker run -p 5000:5000 --name nozimdev/tech-db -t nozimdev/tech-db
-- sudo docker run -p 5000:5000 --name nozimdev -t nozimdev/tech-db
- 
-
-- нагрузочное тестирование `./tech-db-forum perf -u http://localhost:5000/api -i -t=8`
-
 
 # [tech-db-forum](https://github.com/bozaro/tech-db-forum/)
 
