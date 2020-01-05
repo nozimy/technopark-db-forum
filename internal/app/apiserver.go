@@ -5,6 +5,7 @@ import (
 	"github.com/nozimy/technopark-db-forum/internal/store/create"
 	"log"
 	"net/http"
+	"time"
 )
 
 func Start() error {
@@ -37,7 +38,9 @@ func newDB(connStr string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	db.SetMaxOpenConns(20)
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(25)
+	db.SetConnMaxLifetime(time.Hour)
 	if err := create.CreateTables(db); err != nil {
 		return nil, err
 	}

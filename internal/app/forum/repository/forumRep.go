@@ -2,6 +2,7 @@ package forumRepository
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/nozimy/technopark-db-forum/internal/app/forum"
 	"github.com/nozimy/technopark-db-forum/internal/model"
 )
@@ -11,7 +12,7 @@ type ForumRepository struct {
 }
 
 func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]string) (model.Threads, error) {
-	conditionSign := ">"
+	conditionSign := ">="
 	limits := params["limit"]
 	var limit string = "100"
 	if len(limits) >= 1 {
@@ -21,7 +22,7 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 	var desc string = ""
 	if len(descs) >= 1 && descs[0] == "true" {
 		desc = "desc"
-		conditionSign = "<"
+		conditionSign = "<="
 	}
 	sinces := params["since"]
 	var since string = ""
@@ -34,14 +35,13 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 
 	var query string
 
-	//if true {
 	query = "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE LOWER(forum) = LOWER($1) "
-	//}
+
 	if since != "" {
-		query += " AND created " + conditionSign + " '" + since + "' OR created = '" + since + "' "
+		query += fmt.Sprintf(" AND created %s '%s' ", conditionSign, since)
 	}
-	//query += " ORDER BY created $2 LIMIT $3"
-	query += " ORDER BY created " + desc + " LIMIT " + limit
+
+	query += fmt.Sprintf(" ORDER BY created %s LIMIT %s", desc, limit)
 
 	rows, err := r.db.Query(query, forumSlug)
 

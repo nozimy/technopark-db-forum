@@ -19,11 +19,6 @@ func (t ThreadUsecase) Vote(threadSlugOrId string, vote *model.Vote) (*model.Thr
 		return nil, err
 	}
 
-	//userObj, err := t.userRep.FindByNickname(vote.Nickname)
-	//if userObj == nil || err != nil {
-	//	return nil, err
-	//}
-
 	threadObj, err = t.threadRep.Vote(threadObj, vote)
 	if err != nil {
 		return nil, err
@@ -62,10 +57,6 @@ func (t ThreadUsecase) GetThreadPosts(threadSlugOrId string, params map[string][
 	posts, err := t.threadRep.GetThreadPosts(threadObj, limit, desc, since, sort)
 	if err != nil {
 		return nil, err
-	}
-
-	if sort == "tree" || sort == "parent_tree" {
-		//posts = makeTree(posts)
 	}
 
 	return posts, nil
@@ -115,14 +106,6 @@ func (t ThreadUsecase) CreatePosts(threadSlugOrId string, posts *model.Posts) (*
 	if threadObj == nil || err != nil {
 		return nil, 404, err
 	}
-
-	// todo: Maybe Goroutines?
-	//for _, post := range *posts {
-	//	userObj, err := t.userRep.FindByNickname(post.Author)
-	//	if userObj == nil || err != nil {
-	//		return nil, 404, err
-	//	}
-	//}
 
 	posts, err = t.threadRep.CreatePosts(threadObj, posts)
 	if err != nil {

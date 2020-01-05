@@ -1,20 +1,24 @@
 package middleware
 
 import (
-	"github.com/nozimy/technopark-db-forum/internal/app/respond"
 	"net/http"
 )
 
 func CORSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Methods", "POST,PUT,DELETE,GET")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,csrf-token")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
-		if r.Method == http.MethodOptions {
-			respond.Respond(w, r, http.StatusOK, nil)
-			return
-		}
+		//w.Header().Set("Access-Control-Allow-Methods", "POST,PUT,DELETE,GET")
+		//w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		//w.Header().Set("Access-Control-Allow-Credentials", "true")
+		//w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		//if r.Method == http.MethodOptions {
+		//	respond.Respond(w, r, http.StatusOK, nil)
+		//	return
+		//}
+
+		//if r.Method == http.MethodGet {
+		//	log.Println(r.Method, r.URL)
+		//}
+
 		next.ServeHTTP(w, r)
 	})
 }

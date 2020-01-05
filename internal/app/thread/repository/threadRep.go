@@ -3,6 +3,7 @@ package threadRepository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/lib/pq"
 	"github.com/nozimy/technopark-db-forum/internal/app/thread"
 	"github.com/nozimy/technopark-db-forum/internal/model"
@@ -87,21 +88,15 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 	if desc == "desc" {
 		conditionSign = "<"
 	}
-	//desc = "asc"
 
 	if sort == "flat" {
 		query = "SELECT id, parent, thread, forum, author, created, message, isedited, path FROM posts WHERE thread = $1 "
 		if since != "" {
-			query += " AND id " + conditionSign + " '" + since + "' "
+			query += fmt.Sprintf(" AND id %s %s ", conditionSign, since)
 		}
-		query += " ORDER BY created " + desc + ", id " + desc + " LIMIT " + limit
+		query += fmt.Sprintf(" ORDER BY created %s, id %s LIMIT %s", desc, desc, limit)
 	} else if sort == "tree" {
-		//query = "SELECT id, parent, thread, forum, author, created, message, isedited, path FROM posts WHERE thread = $1 AND (array_length(path, 1) IS NULL OR array_length(path, 1) > 0) "
-		//if since != "" {
-		//	query += " AND id " + conditionSign+ " '" + since + "' "
-		//}
-		//query += " ORDER BY path[1] " + desc +  ", path " +desc+" LIMIT " + limit
-		orderString := " ORDER BY path[1] " + desc + ", path " + desc
+		orderString := fmt.Sprintf(" ORDER BY path[1] %s, path %s ", desc, desc)
 		query = "WITH temp as (SELECT id, parent, thread, forum, author, created, message, isedited, path, row_number() " +
 			"over (" + orderString + ") as rownum " +
 			"FROM posts WHERE thread = $1 AND (array_length(path, 1) IS NULL OR array_length(path, 1) > 0) " +
@@ -110,34 +105,28 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 			"FROM temp " +
 			"LIMIT " + limit
 		if since != "" {
-			query += " offset (select rownum from temp where id = " + since + "); "
+			query += fmt.Sprintf(" offset (select rownum from temp where id = %s); ", since)
 		}
 	} else if sort == "parent_tree" {
-		//query = "SELECT id, parent, thread, forum, author, created, message, isedited, path FROM posts WHERE thread = $1 AND array_length(path, 1) = 1 "
-		//if since != "" {
-		//	query += " AND id " + conditionSign+ " '" + since + "' "
-		//}
-		//query += " ORDER BY path[1] " + desc + ", path "+desc+" LIMIT " + limit
-		query = "WITH temp as (SELECT id, parent, thread, forum, author, created, message, isedited, path, " +
+		query = "WITH temp as ( " +
+			"SELECT id, parent, thread, forum, author, created, message, isedited, path, " +
 			"row_number() over (ORDER BY path[1] " + desc + ", path) as rownum " +
 			"FROM posts " +
 			"WHERE thread = $1 AND " +
-			"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND array_length(path, 1) = 1 " +
-			"ORDER BY path[1] " + desc + ", path "
-
-		if since == "" {
-			query += " LIMIT " + limit
+			//"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND array_length(path, 1) = 1 " +
+			"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "
+		if since != "" {
+			query += fmt.Sprintf(" AND path %s (SELECT path[1:1] FROM posts WHERE id = %s) ", conditionSign, since)
 		}
+		query += "ORDER BY path[1] " + desc + ", path "
+
+		query += " LIMIT " + limit
 
 		query += ")) " +
 			"ORDER BY path[1] " + desc + ", path) " +
 			"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
 			"FROM temp " +
 			"ORDER BY path[1] " + desc + ", path "
-
-		if since != "" {
-			query += " offset (select rownum from temp where id = " + since + "); "
-		}
 	}
 
 	rows, err := t.db.Query(query, thread.ID)
@@ -152,28 +141,7 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 			return nil, err
 		}
 
-		//if sort == "parent_tree" {
-		//	childRows, err := t.db.Query("SELECT id, parent, thread, forum, author, created, message, isedited, path FROM posts " +
-		//		"WHERE thread = $1 AND path && ARRAY[$2::bigint] ORDER BY path", thread.ID, p.ID)
-		//	if err != nil {
-		//		return nil, err
-		//	}
-		//
-		//	for childRows.Next() {
-		//		p := model.Post{}
-		//		err := childRows.Scan(&p.ID, &p.Parent, &p.Thread, &p.Forum, &p.Author, &p.Created, &p.Message, &p.IsEdited, pq.Array(&p.Path))
-		//		if err != nil {
-		//			return nil, err
-		//		}
-		//
-		//		posts = append(posts, &p)
-		//	}
-		//	if err := childRows.Close(); err != nil {
-		//		return nil, err
-		//	}
-		//} else {
 		posts = append(posts, &p)
-		//}
 	}
 
 	if err := rows.Close(); err != nil {

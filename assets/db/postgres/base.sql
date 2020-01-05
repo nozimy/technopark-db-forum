@@ -1,3 +1,5 @@
+SET SYNCHRONOUS_COMMIT = 'off';
+
 DROP INDEX IF EXISTS idx_users_email_uindex;
 DROP INDEX IF EXISTS idx_users_nickname_uindex;
 DROP INDEX IF EXISTS idx_forums_slug_uindex;
@@ -10,15 +12,9 @@ DROP INDEX IF EXISTS idx_posts_path;
 DROP INDEX IF EXISTS idx_posts_thread;
 DROP INDEX IF EXISTS idx_posts_thread_id;
 
--- DROP TRIGGER IF EXISTS forum_posts_count_ins ON posts;
--- DROP TRIGGER IF EXISTS forum_posts_count_del ON posts;
--- DROP TRIGGER IF EXISTS forum_threads_count_ins ON threads;
--- DROP TRIGGER IF EXISTS forum_threads_count_del ON threads;
 DROP TRIGGER IF EXISTS on_vote_insert ON votes;
 DROP TRIGGER IF EXISTS on_vote_update ON votes;
 
--- DROP FUNCTION IF EXISTS fn_update_threads_count();
--- DROP FUNCTION IF EXISTS fn_update_posts_count();
 DROP FUNCTION IF EXISTS fn_update_thread_votes_ins();
 DROP FUNCTION IF EXISTS fn_update_thread_votes_upd();
 

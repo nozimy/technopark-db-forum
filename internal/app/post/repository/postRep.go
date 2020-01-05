@@ -42,7 +42,7 @@ func (p PostRepository) FindById(id string, includeUser, includeForum, includeTh
 	id2, _ := strconv.Atoi(id)
 
 	if err := p.db.QueryRow(
-		"SELECT author, created, forum, id, message, thread, isedited FROM posts WHERE id = $1",
+		"SELECT author, created, forum, id, message, thread, isedited, parent FROM posts WHERE id = $1",
 		id2,
 	).Scan(
 		&postObj.Post.Author,
@@ -52,6 +52,7 @@ func (p PostRepository) FindById(id string, includeUser, includeForum, includeTh
 		&postObj.Post.Message,
 		&postObj.Post.Thread,
 		&postObj.Post.IsEdited,
+		&postObj.Post.Parent,
 	); err != nil {
 		return nil, err
 	}
