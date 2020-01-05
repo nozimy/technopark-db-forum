@@ -18,6 +18,7 @@ DROP TRIGGER IF EXISTS on_vote_update ON votes;
 DROP FUNCTION IF EXISTS fn_update_thread_votes_ins();
 DROP FUNCTION IF EXISTS fn_update_thread_votes_upd();
 
+DROP TABLE IF EXISTS forum_users;
 DROP TABLE IF EXISTS users CASCADE;
 DROP TABLE IF EXISTS forums;
 DROP TABLE IF EXISTS threads CASCADE;
@@ -28,7 +29,7 @@ DROP TABLE IF EXISTS votes;
 CREATE TABLE IF NOT EXISTS users
 (
     id       bigserial not null primary key,
-    nickname varchar(50)   not null unique,
+    nickname varchar(50) COLLATE "POSIX" not null unique,
     about    text,
     email    varchar(50)   not null,
     fullname varchar(100)   not null
@@ -137,46 +138,33 @@ CREATE TRIGGER on_vote_update
     FOR EACH ROW EXECUTE PROCEDURE fn_update_thread_votes_upd();
 
 
--- CREATE OR REPLACE FUNCTION fn_update_posts_count() RETURNS trigger AS $update_posts_count$
---     BEGIN
---         UPDATE forums AS f SET posts = (SELECT count(id) FROM posts WHERE forum = f.slug)
---         WHERE slug = (SELECT forum FROM new_table LIMIT 1);
---         RETURN NULL;
---     END;
--- $update_posts_count$ LANGUAGE plpgsql;
---
--- CREATE OR REPLACE FUNCTION fn_update_threads_count() RETURNS trigger AS $body$
---     BEGIN
---         UPDATE forums AS f SET threads = (SELECT count(id) FROM threads WHERE forum = f.slug)
---         WHERE slug = (SELECT forum FROM new_table LIMIT 1);
---         RETURN NULL;
---     END;
--- $body$ LANGUAGE plpgsql;
+CREATE TABLE IF NOT EXISTS forum_users (
+    user_id BIGINT REFERENCES users(id),
+    forum_id BIGINT REFERENCES forums(id)
+);
 
--- CREATE TRIGGER forum_posts_count_ins
---     AFTER INSERT
---     ON posts
---     REFERENCING NEW TABLE AS new_table
---     FOR EACH STATEMENT
---     EXECUTE PROCEDURE fn_update_posts_count();
---
--- CREATE TRIGGER forum_posts_count_del
---     AFTER DELETE
---     ON posts
---     REFERENCING OLD TABLE AS new_table
---     FOR EACH STATEMENT
---     EXECUTE PROCEDURE fn_update_posts_count();
+CREATE INDEX idx_forum_users_user_id
+    ON forum_users(user_id);
 
--- CREATE TRIGGER forum_threads_count_ins
---     AFTER INSERT
---     ON threads
---     REFERENCING NEW TABLE AS new_table
---     FOR EACH STATEMENT
---     EXECUTE PROCEDURE fn_update_threads_count();
---
--- CREATE TRIGGER forum_threads_count_del
---     AFTER DELETE
---     ON threads
---     REFERENCING OLD TABLE AS new_table
---     FOR EACH STATEMENT
---     EXECUTE PROCEDURE fn_update_threads_count();
+CREATE INDEX idx_forum_users_forum_id
+    ON forum_users(forum_id);
+
+CREATE INDEX idx_forum_users_user_id_forum_id
+    ON forum_users (user_id, forum_id);
+
+CREATE OR REPLACE FUNCTION forum_users_update()
+    RETURNS TRIGGER AS '
+    BEGIN
+        INSERT INTO forum_users (user_id, forum_id) VALUES ((SELECT id FROM users WHERE LOWER(NEW.author) = LOWER(nickname)),
+                                                              (SELECT id FROM forums WHERE LOWER(NEW.forum) = LOWER(slug)));
+        RETURN NULL;
+    END;
+' LANGUAGE plpgsql;
+
+CREATE TRIGGER on_post_insert
+    AFTER INSERT ON posts
+    FOR EACH ROW EXECUTE PROCEDURE forum_users_update();
+
+CREATE TRIGGER on_thread_insert
+    AFTER INSERT ON threads
+    FOR EACH ROW EXECUTE PROCEDURE forum_users_update();

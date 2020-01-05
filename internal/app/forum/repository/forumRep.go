@@ -12,30 +12,24 @@ type ForumRepository struct {
 }
 
 func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]string) (model.Threads, error) {
-	conditionSign := ">="
-	limits := params["limit"]
-	var limit string = "100"
-	if len(limits) >= 1 {
-		limit = limits[0]
+	limit := "100"
+	if len(params["limit"]) >= 1 {
+		limit = params["limit"][0]
 	}
-	descs := params["desc"]
-	var desc string = ""
-	if len(descs) >= 1 && descs[0] == "true" {
+	desc := ""
+	conditionSign := ">="
+	if len(params["desc"]) >= 1 && params["desc"][0] == "true" {
 		desc = "desc"
 		conditionSign = "<="
 	}
-	sinces := params["since"]
-	var since string = ""
-	if len(sinces) >= 1 {
-		since = sinces[0]
+	since := ""
+	if len(params["since"]) >= 1 {
+		since = params["since"][0]
 	}
 
-	//var threads model.Threads
 	threads := model.Threads{}
 
-	var query string
-
-	query = "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE LOWER(forum) = LOWER($1) "
+	query := "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE LOWER(forum) = LOWER($1) "
 
 	if since != "" {
 		query += fmt.Sprintf(" AND created %s '%s' ", conditionSign, since)
@@ -67,42 +61,32 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 	return threads, nil
 }
 
-func (r ForumRepository) FindForumUsers(forumSlug string, params map[string][]string) (model.Users, error) {
-	limits := params["limit"]
-	var limit string = "100"
-	if len(limits) >= 1 {
-		limit = limits[0]
+func (r ForumRepository) FindForumUsers(forumObj *model.Forum, params map[string][]string) (model.Users, error) {
+	limit := "100"
+	if len(params["limit"]) >= 1 {
+		limit = params["limit"][0]
 	}
 	sinceConditionSign := ">"
-	descs := params["desc"]
-	var desc string = ""
-	if len(descs) >= 1 && descs[0] == "true" {
+	desc := ""
+	if len(params["desc"]) >= 1 && params["desc"][0] == "true" {
 		desc = "desc"
 		sinceConditionSign = "<"
 	}
-	sinces := params["since"]
-	var since string = ""
-	if len(sinces) >= 1 {
-		since = sinces[0]
+	since := ""
+	if len(params["since"]) >= 1 {
+		since = params["since"][0]
 	}
 
 	users := model.Users{}
 
-	var query string
-
-	if true {
-		query = "SELECT nickname, email, fullname, about FROM users " +
-			"WHERE nickname IN (" +
-			"SELECT DISTINCT author FROM threads WHERE LOWER(forum) = LOWER($1) " +
-			"UNION SELECT DISTINCT author FROM posts WHERE LOWER(forum) = LOWER($1) " +
-			")"
-	}
+	query := "SELECT nickname, email, fullname, about FROM users " +
+		"WHERE id IN (SELECT user_id FROM forum_users WHERE forum_id = $1) "
 	if since != "" {
-		query += " AND LOWER(nickname COLLATE \"POSIX\") " + sinceConditionSign + " LOWER('" + since + "' COLLATE \"POSIX\") "
+		query += fmt.Sprintf(" AND LOWER(nickname) %s LOWER('%s') ", sinceConditionSign, since)
 	}
-	query += " ORDER BY LOWER(nickname COLLATE \"POSIX\") " + desc + " LIMIT " + limit
+	query += fmt.Sprintf(" ORDER BY LOWER(nickname) %s LIMIT %s ", desc, limit)
 
-	rows, err := r.db.Query(query, forumSlug)
+	rows, err := r.db.Query(query, forumObj.ID)
 
 	if err != nil {
 		return nil, err
@@ -144,8 +128,9 @@ func (r ForumRepository) Create(f *model.Forum) error {
 
 func (r ForumRepository) Find(slug string) (*model.Forum, error) {
 	f := &model.Forum{}
+
 	if err := r.db.QueryRow(
-		"SELECT slug, title, usernick, posts, threads FROM forums WHERE LOWER(slug) = LOWER($1)",
+		"SELECT slug, title, usernick, posts, threads, id FROM forums WHERE LOWER(slug) = LOWER($1)",
 		slug,
 	).Scan(
 		&f.Slug,
@@ -153,6 +138,7 @@ func (r ForumRepository) Find(slug string) (*model.Forum, error) {
 		&f.User,
 		&f.Posts,
 		&f.Threads,
+		&f.ID,
 	); err != nil {
 		return nil, err
 	}

@@ -33,25 +33,21 @@ func (t ThreadUsecase) GetThreadPosts(threadSlugOrId string, params map[string][
 		return nil, err
 	}
 
-	limits := params["limit"]
 	limit := "100"
-	if len(limits) >= 1 {
-		limit = limits[0]
+	if len(params["limit"]) >= 1 {
+		limit = params["limit"][0]
 	}
-	descs := params["desc"]
 	desc := ""
-	if len(descs) >= 1 && descs[0] == "true" {
+	if len(params["desc"]) >= 1 && params["desc"][0] == "true" {
 		desc = "desc"
 	}
-	sinces := params["since"]
 	since := ""
-	if len(sinces) >= 1 {
-		since = sinces[0]
+	if len(params["since"]) >= 1 {
+		since = params["since"][0]
 	}
-	sorts := params["sort"]
 	sort := "flat"
-	if len(sorts) >= 1 {
-		sort = sorts[0]
+	if len(params["sort"]) >= 1 {
+		sort = params["sort"][0]
 	}
 
 	posts, err := t.threadRep.GetThreadPosts(threadObj, limit, desc, since, sort)

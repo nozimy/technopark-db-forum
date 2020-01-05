@@ -3,12 +3,11 @@ package respond
 import (
 	"encoding/json"
 	"github.com/pkg/errors"
-	"log"
 	"net/http"
 )
 
 func Error(w http.ResponseWriter, r *http.Request, code int, err error) {
-	log.Println(err)
+	//log.Println(err)
 	Respond(w, r, code, map[string]string{"message": errors.Cause(err).Error()})
 }
 

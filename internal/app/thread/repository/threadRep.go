@@ -97,36 +97,56 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 		query += fmt.Sprintf(" ORDER BY created %s, id %s LIMIT %s", desc, desc, limit)
 	} else if sort == "tree" {
 		orderString := fmt.Sprintf(" ORDER BY path[1] %s, path %s ", desc, desc)
-		query = "WITH temp as (SELECT id, parent, thread, forum, author, created, message, isedited, path, row_number() " +
-			"over (" + orderString + ") as rownum " +
-			"FROM posts WHERE thread = $1 AND (array_length(path, 1) IS NULL OR array_length(path, 1) > 0) " +
-			orderString + ") " +
-			"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
-			"FROM temp " +
-			"LIMIT " + limit
-		if since != "" {
-			query += fmt.Sprintf(" offset (select rownum from temp where id = %s); ", since)
-		}
-	} else if sort == "parent_tree" {
-		query = "WITH temp as ( " +
-			"SELECT id, parent, thread, forum, author, created, message, isedited, path, " +
-			"row_number() over (ORDER BY path[1] " + desc + ", path) as rownum " +
+		//query = "WITH temp as (" +
+		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path, row_number() " +
+		//	"over (" + orderString + ") as rownum " +
+		//	"FROM posts WHERE thread = $1 AND (array_length(path, 1) IS NULL OR array_length(path, 1) > 0) "
+		//if since != "" {
+		//	query += fmt.Sprintf(" AND path %s (SELECT path FROM posts WHERE id = %s) ", conditionSign, since)
+		//}
+		//query+= orderString + ") " +
+		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
+		//	"FROM temp " +
+		//	"LIMIT " + limit
+
+		query = "SELECT id, parent, thread, forum, author, created, message, isedited, path " +
 			"FROM posts " +
-			"WHERE thread = $1 AND " +
-			//"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND array_length(path, 1) = 1 " +
-			"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "
+			"WHERE thread = $1 "
+		if since != "" {
+			query += fmt.Sprintf(" AND path %s (SELECT path FROM posts WHERE id = %s) ", conditionSign, since)
+		}
+		query += orderString
+		query += fmt.Sprintf("LIMIT %s", limit)
+
+	} else if sort == "parent_tree" {
+		//query = "WITH temp as ( " +
+		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path, " +
+		//	"row_number() over (ORDER BY path[1] " + desc + ", path) as rownum " +
+		//	"FROM posts " +
+		//	"WHERE thread = $1 AND " +
+		//	//"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND array_length(path, 1) = 1 " +
+		//	"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "
+		//if since != "" {
+		//	query += fmt.Sprintf(" AND path %s (SELECT path[1:1] FROM posts WHERE id = %s) ", conditionSign, since)
+		//}
+		//query += "ORDER BY path[1] " + desc + ", path "
+		//
+		//query += " LIMIT " + limit
+		//
+		//query += ")) " +
+		//	"ORDER BY path[1] " + desc + ", path) " +
+		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
+		//	"FROM temp " +
+		//	"ORDER BY path[1] " + desc + ", path "
+
+		query = "SELECT id, parent, thread, forum, author, created, message, isedited, path " +
+			"FROM posts " +
+			"WHERE thread = $1 AND path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "
 		if since != "" {
 			query += fmt.Sprintf(" AND path %s (SELECT path[1:1] FROM posts WHERE id = %s) ", conditionSign, since)
 		}
-		query += "ORDER BY path[1] " + desc + ", path "
-
-		query += " LIMIT " + limit
-
-		query += ")) " +
-			"ORDER BY path[1] " + desc + ", path) " +
-			"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
-			"FROM temp " +
-			"ORDER BY path[1] " + desc + ", path "
+		query += fmt.Sprintf("ORDER BY path[1] %s, path LIMIT %s)) ", desc, limit)
+		query += fmt.Sprintf("ORDER BY path[1] %s, path ", desc)
 	}
 
 	rows, err := t.db.Query(query, thread.ID)
@@ -184,26 +204,6 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 		return nil, err
 	}
 
-	//stmt, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) " +
-	//	"SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, ARRAY[currval(pg_get_serial_sequence('posts', 'id'))::bigint] " +
-	//	"RETURNING id, parent, thread, forum, author, created, message, isedited")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	////stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(parent, thread, forum, author, created, message) SELECT $1, $2, $3, $4, $5, $6 WHERE EXISTS(SELECT id FROM posts WHERE id = $1) RETURNING id, parent, thread, forum, author, created, message, isedited")
-	//stmtWithParentCheck, err := tx.Prepare("INSERT INTO posts(id, parent, thread, forum, author, created, message, path) " +
-	//	//"VALUES(nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, (SELECT path FROM posts WHERE id = $1 AND thread = $2) || currval(pg_get_serial_sequence('posts', 'id'))::bigint) " +
-	//	"SELECT nextval('posts_id_seq'::regclass), $1, $2, $3, $4, $5, $6, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) " +
-	//	"FROM posts WHERE id = $1 AND thread = $2 " +
-	//	"RETURNING id, parent, thread, forum, author, created, message, isedited")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//defer stmt.Close()
-	//defer stmtWithParentCheck.Close()
-
 	now := time.Now()
 
 	sqlStr := "INSERT INTO posts(id, parent, thread, forum, author, created, message, path) VALUES "
@@ -239,20 +239,14 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 			sqlStr += " (nextval('posts_id_seq'::regclass), ?, ?, ?, ?, ?, ?, " +
 				"(SELECT path FROM posts WHERE id = ? AND thread = ?) || " +
 				"currval(pg_get_serial_sequence('posts', 'id'))::bigint),"
-			//sqlStr += "SELECT nextval('posts_id_seq'::regclass), ?, ?, ?, ?, ?, ?, path || (select currval(pg_get_serial_sequence('posts', 'id'))::bigint) " +
-			//	"FROM posts WHERE id = " +string(post.Parent)+ " AND thread = " +string(thread.ID)+ " ,"
+
 			vals = append(vals, post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message, post.Parent, thread.ID)
 		}
 
 	}
 	sqlStr = strings.TrimSuffix(sqlStr, ",")
 
-	//sqlStr += " RETURNING ( SELECT id, parent, thread, forum, author, created, message, isedited FROM posts WHERE created = ?) "
-	//if len(*posts) == 1 {
 	sqlStr += " RETURNING  id, parent, thread, forum, author, created, message, isedited "
-	//}
-
-	//vals = append(vals, now)
 
 	sqlStr = ReplaceSQL(sqlStr, "?")
 	if len(*posts) > 0 {
@@ -291,30 +285,6 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 		_ = tx.Rollback()
 		return nil, err
 	}
-
-	//for _, post := range *posts {
-	//	var row *sql.Row
-	//	if post.Parent == 0 {
-	//		row = stmt.QueryRow(post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
-	//	} else {
-	//		row = stmtWithParentCheck.QueryRow(post.Parent, thread.ID, thread.Forum, post.Author, now, post.Message)
-	//	}
-	//
-	//	err := row.Scan(
-	//		&post.ID,
-	//		&post.Parent,
-	//		&post.Thread,
-	//		&post.Forum,
-	//		&post.Author,
-	//		&post.Created,
-	//		&post.Message,
-	//		&post.IsEdited,
-	//	)
-	//	if err != nil {
-	//		tx.Rollback()
-	//		return nil, err
-	//	}
-	//}
 
 	err = tx.Commit()
 	if err != nil {

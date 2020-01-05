@@ -34,7 +34,7 @@ func (f ForumUsecase) GetUsersByForum(forumSlug string, params map[string][]stri
 		return nil, 404, err
 	}
 
-	users, err := f.forumRep.FindForumUsers(forumSlug, params)
+	users, err := f.forumRep.FindForumUsers(forumObj, params)
 	if err != nil {
 		return nil, 404, err
 	}
