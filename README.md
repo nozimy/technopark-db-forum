@@ -1,7 +1,7 @@
 # Курсовой проект "Форум" по курсу СУБД Технопрка Mail.ru
 
 - собрать контейнер `sudo docker build -t nozimdev/tech-db .`
-- оставить работу контейнера `docker stop nozimdev`
+- остановить работу контейнера `docker stop nozimdev`
 - удалить контейнер `docker rm nozimdev`
 - запустить контейнер `sudo docker run -p 5000:5000 --name nozimdev -t nozimdev/tech-db`
  
