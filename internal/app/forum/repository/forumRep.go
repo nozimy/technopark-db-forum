@@ -31,7 +31,7 @@ func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]
 
 	threads := model.Threads{}
 
-	query := "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE LOWER(forum) = LOWER($1) "
+	query := "SELECT id, forum, author, slug, created, title, message, votes FROM threads WHERE forum = $1 "
 
 	if since != "" {
 		query += fmt.Sprintf(" AND created %s '%s' ", conditionSign, since)
@@ -84,9 +84,9 @@ func (r ForumRepository) FindForumUsers(forumObj *model.Forum, params map[string
 	query := "SELECT nickname, email, fullname, about FROM users " +
 		"WHERE id IN (SELECT user_id FROM forum_users WHERE forum_id = $1) "
 	if since != "" {
-		query += fmt.Sprintf(" AND LOWER(nickname) %s LOWER('%s') ", sinceConditionSign, since)
+		query += fmt.Sprintf(" AND nickname %s '%s' ", sinceConditionSign, since)
 	}
-	query += fmt.Sprintf(" ORDER BY LOWER(nickname) %s LIMIT %s ", desc, limit)
+	query += fmt.Sprintf(" ORDER BY nickname %s LIMIT %s ", desc, limit)
 
 	rows, err := r.db.Query(query, forumObj.ID)
 
@@ -132,7 +132,7 @@ func (r ForumRepository) Find(slug string) (*model.Forum, error) {
 	f := &model.Forum{}
 
 	if err := r.db.QueryRow(
-		"SELECT slug, title, usernick, posts, threads, id FROM forums WHERE LOWER(slug) = LOWER($1)",
+		"SELECT slug, title, usernick, posts, threads, id FROM forums WHERE slug = $1",
 		slug,
 	).Scan(
 		&f.Slug,

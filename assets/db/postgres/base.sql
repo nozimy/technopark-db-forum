@@ -41,6 +41,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex
     ON users (LOWER(email));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex
     ON users (LOWER(nickname));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex2
+    ON users (email);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex2
+    ON users (nickname);
 CREATE INDEX IF NOT EXISTS idx_users_pok
     ON users (nickname, email, fullname, about, LOWER(email), LOWER(nickname));
 
@@ -58,6 +62,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_uindex
     ON forums (LOWER(slug));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique
     ON forums (LOWER(userNick));
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_uindex2
+    ON forums (slug);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique2
+    ON forums (userNick);
 
 CREATE TABLE IF NOT EXISTS threads
 (
@@ -67,7 +75,7 @@ CREATE TABLE IF NOT EXISTS threads
     message varchar,
     votes   int         default 0,
     author  varchar,
-    forum   varchar,
+    forum   citext,
     created timestamptz DEFAULT now()
 );
 
@@ -75,6 +83,10 @@ CREATE INDEX IF NOT EXISTS idx_threads_slug
     ON threads (LOWER(slug));
 CREATE INDEX IF NOT EXISTS idx_threads_forum
     ON threads (LOWER(forum));
+CREATE INDEX IF NOT EXISTS idx_threads_slug2
+    ON threads (slug);
+CREATE INDEX IF NOT EXISTS idx_threads_forum2
+    ON threads (forum);
 CREATE INDEX IF NOT EXISTS idx_threads_pok
     ON threads (id, forum, author, slug, created, title, message, votes);
 CREATE INDEX IF NOT EXISTS idx_threads_created
@@ -111,6 +123,8 @@ CREATE TABLE IF NOT EXISTS votes
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique
     ON votes (LOWER(nickname), thread);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique2
+    ON votes (nickname, thread);
 
 CREATE FUNCTION fn_update_thread_votes_ins()
     RETURNS TRIGGER AS '

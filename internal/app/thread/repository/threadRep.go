@@ -186,7 +186,7 @@ func (t ThreadRepository) UpdateThread(id int, slug string, threadUpdate *model.
 	th := &model.Thread{}
 
 	err := t.db.QueryRow(
-		"UPDATE threads SET title = $1, message = $2 WHERE id=$3 OR LOWER(slug)=LOWER($4) RETURNING slug, title, message, forum, author, created, votes, id",
+		"UPDATE threads SET title = $1, message = $2 WHERE id=$3 OR slug=$4 RETURNING slug, title, message, forum, author, created, votes, id",
 		threadUpdate.Title,
 		threadUpdate.Message,
 		id,
@@ -224,7 +224,7 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 	vals := []interface{}{}
 	for _, post := range *posts {
 		var author string
-		err = t.db.QueryRow("SELECT nickname FROM users WHERE LOWER(nickname) = LOWER($1)",
+		err = t.db.QueryRow("SELECT nickname FROM users WHERE nickname = $1",
 			post.Author,
 		).Scan(&author)
 		if err != nil || author == "" {
@@ -296,7 +296,7 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 
 	f := &model.Forum{}
 	err = t.db.QueryRow(
-		"UPDATE forums SET posts = posts + $1 WHERE lower(slug) = lower($2) RETURNING slug, title, usernick, posts, threads, id",
+		"UPDATE forums SET posts = posts + $1 WHERE slug = $2 RETURNING slug, title, usernick, posts, threads, id",
 		len(*posts),
 		thread.Forum,
 	).Scan(
@@ -366,7 +366,7 @@ func (t ThreadRepository) CreateThread(newThread *model.NewThread) (*model.Threa
 
 	f := &model.Forum{}
 	err = t.db.QueryRow(
-		"UPDATE forums SET threads = threads + 1 WHERE lower(slug) = lower($1) RETURNING slug, title, usernick, posts, threads, id",
+		"UPDATE forums SET threads = threads + 1 WHERE slug = $1 RETURNING slug, title, usernick, posts, threads, id",
 		th.Forum,
 	).Scan(
 		&f.Slug,
@@ -392,7 +392,7 @@ func (t ThreadRepository) FindByIdOrSlug(id int, slug string) (*model.Thread, er
 		th = x.(*model.Thread)
 	} else {
 		err := t.db.QueryRow(
-			"SELECT slug, title, message, forum, author, created, votes, id FROM threads WHERE id=$1 OR (LOWER(slug)=LOWER($2) AND slug <> '')",
+			"SELECT slug, title, message, forum, author, created, votes, id FROM threads WHERE id=$1 OR (slug=$2 AND slug <> '')",
 			id,
 			slug,
 		).Scan(

@@ -39,7 +39,7 @@ func newDB(connStr string) (*sql.DB, error) {
 	}
 
 	db.SetMaxOpenConns(100)
-	db.SetMaxIdleConns(100)
+	db.SetMaxIdleConns(30)
 	db.SetConnMaxLifetime(time.Hour)
 	if err := create.CreateTables(db); err != nil {
 		return nil, err

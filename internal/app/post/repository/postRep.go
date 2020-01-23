@@ -72,7 +72,7 @@ func (p PostRepository) FindById(id string, includeUser, includeForum, includeTh
 			postObj.Author = x.(*model.User)
 		} else {
 			if err := p.db.QueryRow(
-				"SELECT about, email, fullname, nickname FROM users WHERE LOWER(nickname) = LOWER($1)",
+				"SELECT about, email, fullname, nickname FROM users WHERE nickname = $1",
 				postObj.Post.Author,
 			).Scan(
 				&postObj.Author.About,
@@ -92,7 +92,7 @@ func (p PostRepository) FindById(id string, includeUser, includeForum, includeTh
 			postObj.Forum = x.(*model.Forum)
 		} else {
 			if err := p.db.QueryRow(
-				"SELECT usernick, title, slug, posts, threads FROM forums WHERE LOWER(slug) = LOWER($1)",
+				"SELECT usernick, title, slug, posts, threads FROM forums WHERE slug = $1",
 				postObj.Post.Forum,
 			).Scan(
 				&postObj.Forum.User,
