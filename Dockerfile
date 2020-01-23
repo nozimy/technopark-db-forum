@@ -25,7 +25,7 @@ MAINTAINER Nozim Yunusov
 #
 # Установка postgresql
 #
-ENV PGVER 10
+ENV PGVER 12
 RUN apt -y update && apt install -y postgresql-$PGVER
 
 # Run the rest of the commands as the ``postgres`` user created by the ``postgres-$PGVER`` package when it was ``apt-get installed``
