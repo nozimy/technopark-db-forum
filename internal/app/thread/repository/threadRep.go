@@ -93,6 +93,10 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 		conditionSign = "<"
 	}
 
+	//key := fmt.Sprintf("%d%s%s%s%s", thread.ID,limit,desc,since,sort)
+	//if x, found := t.cache.Get(key); found {
+	//	posts = x.(model.Posts)
+	//} else {
 	if sort == "flat" {
 		query = "SELECT id, parent, thread, forum, author, created, message, isedited FROM posts WHERE thread = $1 "
 		if since != "" {
@@ -171,6 +175,9 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 	if err := rows.Close(); err != nil {
 		return nil, err
 	}
+
+	//t.cache.Set(key, posts, cache2.DefaultExpiration)
+	//}
 
 	return posts, nil
 }

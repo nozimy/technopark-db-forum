@@ -22,7 +22,6 @@ FROM ubuntu:18.04 AS release
 
 MAINTAINER Nozim Yunusov
 
-
 #
 # Установка postgresql
 #
@@ -46,7 +45,13 @@ RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba
 # And add ``listen_addresses`` to ``/etc/postgresql/$PGVER/main/postgresql.conf``
 RUN echo "listen_addresses='*'" >> /etc/postgresql/$PGVER/main/postgresql.conf
 RUN echo "include_dir='conf.d'" >> /etc/postgresql/$PGVER/main/postgresql.conf
-ADD ./postgresql.conf /etc/postgresql/$PGVER/main/conf.d/basic.conf
+#ADD ./postgresql.conf /etc/postgresql/$PGVER/main/conf.d/basic.conf
+RUN echo "fsync = off" >> /etc/postgresql/$PGVER/main/postgresql.conf
+RUN echo "synchronous_commit = off" >> /etc/postgresql/$PGVER/main/postgresql.conf
+RUN echo "shared_buffers = 256MB" >> /etc/postgresql/$PGVER/main/postgresql.conf
+RUN echo "wal_buffers = 32MB" >> /etc/postgresql/$PGVER/main/postgresql.conf
+RUN echo "work_mem = 128MB" >> /etc/postgresql/$PGVER/main/postgresql.conf
+
 
 
 # Expose the PostgreSQL port
@@ -68,4 +73,4 @@ COPY --from=build /usr/src/tech-db/technopark-db-forum .
 #
 # Запускаем PostgreSQL и сервер
 #
-CMD service postgresql start && ./technopark-db-forum --scheme=http --port=5000 --host=0.0.0.0 --database=postgres://docker:docker@localhost/docker
+CMD service postgresql start && ./technopark-db-forum
