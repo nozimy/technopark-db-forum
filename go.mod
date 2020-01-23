@@ -9,6 +9,7 @@ require (
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.6.0+incompatible
 	github.com/lib/pq v1.3.0
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.8.1
 	github.com/shopspring/decimal v0.0.0-20191130220710-360f2bc03045 // indirect
 	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876 // indirect

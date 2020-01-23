@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"github.com/nozimy/technopark-db-forum/internal/app/forum"
 	"github.com/nozimy/technopark-db-forum/internal/model"
+	cache2 "github.com/patrickmn/go-cache"
 )
 
 type ForumRepository struct {
-	db *sql.DB
+	db    *sql.DB
+	cache *cache2.Cache
 }
 
 func (r ForumRepository) FindForumThreads(forumSlug string, params map[string][]string) (model.Threads, error) {
@@ -146,6 +148,6 @@ func (r ForumRepository) Find(slug string) (*model.Forum, error) {
 	return f, nil
 }
 
-func NewForumRepository(db *sql.DB) forum.Repository {
-	return &ForumRepository{db}
+func NewForumRepository(db *sql.DB, c *cache2.Cache) forum.Repository {
+	return &ForumRepository{db, c}
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/nozimy/technopark-db-forum/internal/app/thread"
 	"github.com/nozimy/technopark-db-forum/internal/app/user"
 	"github.com/nozimy/technopark-db-forum/internal/model"
+	"github.com/patrickmn/go-cache"
 	"github.com/pkg/errors"
 )
 
@@ -12,6 +13,7 @@ type ForumUsecase struct {
 	forumRep  forum.Repository
 	userRep   user.Repository
 	threadRep thread.Repository
+	cache     *cache.Cache
 }
 
 func (f ForumUsecase) GetThreadsByForum(forumSlug string, params map[string][]string) (model.Threads, int, error) {
@@ -89,19 +91,28 @@ func (f ForumUsecase) CreateForum(data *model.Forum) (*model.Forum, int, error) 
 }
 
 func (f ForumUsecase) Find(slug string) (*model.Forum, error) {
-	forumObj, err := f.forumRep.Find(slug)
+	var forumObj *model.Forum
+	var err error
 
-	if err != nil {
-		return nil, errors.Wrap(err, "forumRep.Find()")
+	fromCache, found := f.cache.Get(slug)
+	if !found {
+		forumObj, err = f.forumRep.Find(slug)
+		if err != nil {
+			return nil, errors.Wrap(err, "forumRep.Find()")
+		}
+		f.cache.Set(slug, forumObj, cache.DefaultExpiration)
+	} else {
+		forumObj = fromCache.(*model.Forum)
 	}
 
 	return forumObj, nil
 }
 
-func NewForumUsecase(f forum.Repository, u user.Repository, t thread.Repository) forum.Usecase {
+func NewForumUsecase(f forum.Repository, u user.Repository, t thread.Repository, c *cache.Cache) forum.Usecase {
 	return &ForumUsecase{
 		forumRep:  f,
 		userRep:   u,
 		threadRep: t,
+		cache:     c,
 	}
 }

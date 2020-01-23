@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"github.com/nozimy/technopark-db-forum/internal/app/thread"
 	"github.com/nozimy/technopark-db-forum/internal/model"
+	cache2 "github.com/patrickmn/go-cache"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type ThreadRepository struct {
-	db *sql.DB
+	db    *sql.DB
+	cache *cache2.Cache
 }
 
 func (t ThreadRepository) Vote(thread *model.Thread, vote *model.Vote) (*model.Thread, error) {
@@ -74,6 +76,9 @@ func (t ThreadRepository) Vote(thread *model.Thread, vote *model.Vote) (*model.T
 	if err != nil {
 		return nil, err
 	}
+
+	t.cache.Delete(thread.Slug)
+	//t.cache.Delete("thread_" + fmt.Sprint(thread.ID))
 
 	return thread, nil
 }
@@ -194,6 +199,9 @@ func (t ThreadRepository) UpdateThread(id int, slug string, threadUpdate *model.
 		return nil, err
 	}
 
+	t.cache.Set(th.Slug, th, cache2.DefaultExpiration)
+	//t.cache.Delete("thread_" + fmt.Sprint(th.ID))
+
 	return th, nil
 }
 
@@ -279,11 +287,25 @@ func (t ThreadRepository) CreatePosts(thread *model.Thread, posts *model.Posts) 
 		}
 	}
 
-	_, err = tx.Exec("UPDATE forums SET posts = posts + $1 WHERE lower(slug) = lower($2)", len(*posts), thread.Forum)
+	f := &model.Forum{}
+	err = t.db.QueryRow(
+		"UPDATE forums SET posts = posts + $1 WHERE lower(slug) = lower($2) RETURNING slug, title, usernick, posts, threads, id",
+		len(*posts),
+		thread.Forum,
+	).Scan(
+		&f.Slug,
+		&f.Title,
+		&f.User,
+		&f.Posts,
+		&f.Threads,
+		&f.ID,
+	)
 	if err != nil {
 		_ = tx.Rollback()
 		return nil, err
 	}
+
+	t.cache.Set(thread.Forum, f, cache2.DefaultExpiration)
 
 	err = tx.Commit()
 	if err != nil {
@@ -335,10 +357,23 @@ func (t ThreadRepository) CreateThread(newThread *model.NewThread) (*model.Threa
 		return nil, err
 	}
 
-	_, err = t.db.Exec("UPDATE forums SET threads = threads + 1 WHERE lower(slug) = lower($1)", th.Forum)
+	f := &model.Forum{}
+	err = t.db.QueryRow(
+		"UPDATE forums SET threads = threads + 1 WHERE lower(slug) = lower($1) RETURNING slug, title, usernick, posts, threads, id",
+		th.Forum,
+	).Scan(
+		&f.Slug,
+		&f.Title,
+		&f.User,
+		&f.Posts,
+		&f.Threads,
+		&f.ID,
+	)
 	if err != nil {
 		return nil, err
 	}
+
+	t.cache.Set(th.Forum, f, cache2.DefaultExpiration)
 
 	return th, nil
 }
@@ -346,30 +381,37 @@ func (t ThreadRepository) CreateThread(newThread *model.NewThread) (*model.Threa
 func (t ThreadRepository) FindByIdOrSlug(id int, slug string) (*model.Thread, error) {
 	th := &model.Thread{}
 
-	err := t.db.QueryRow(
-		"SELECT slug, title, message, forum, author, created, votes, id FROM threads WHERE id=$1 OR (LOWER(slug)=LOWER($2) AND slug <> '')",
-		id,
-		slug,
-	).Scan(
-		&th.Slug,
-		&th.Title,
-		&th.Message,
-		&th.Forum,
-		&th.Author,
-		&th.Created,
-		&th.Votes,
-		&th.ID,
-	)
+	if x, found := t.cache.Get(slug); found {
+		th = x.(*model.Thread)
+	} else {
+		err := t.db.QueryRow(
+			"SELECT slug, title, message, forum, author, created, votes, id FROM threads WHERE id=$1 OR (LOWER(slug)=LOWER($2) AND slug <> '')",
+			id,
+			slug,
+		).Scan(
+			&th.Slug,
+			&th.Title,
+			&th.Message,
+			&th.Forum,
+			&th.Author,
+			&th.Created,
+			&th.Votes,
+			&th.ID,
+		)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+
+		t.cache.Set(th.Slug, th, cache2.DefaultExpiration)
+		//t.cache.Delete("thread_" + fmt.Sprint(th.ID))
 	}
 
 	return th, nil
 }
 
-func NewThreadRepository(db *sql.DB) thread.Repository {
-	return &ThreadRepository{db}
+func NewThreadRepository(db *sql.DB, c *cache2.Cache) thread.Repository {
+	return &ThreadRepository{db, c}
 }
 
 func ReplaceSQL(old, searchPattern string) string {

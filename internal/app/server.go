@@ -19,7 +19,9 @@ import (
 	userRepository "github.com/nozimy/technopark-db-forum/internal/app/user/repository"
 	userUsecase "github.com/nozimy/technopark-db-forum/internal/app/user/usecase"
 	"github.com/nozimy/technopark-db-forum/internal/middleware"
+	"github.com/patrickmn/go-cache"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -41,13 +43,15 @@ func NewServer(config *Config) (*Server, error) {
 }
 
 func (s *Server) ConfigureServer(db *sql.DB) {
-	forumRep := forumRepository.NewForumRepository(db)
-	userRep := userRepository.NewUserRepository(db)
-	threadRep := threadRepository.NewThreadRepository(db)
-	postRep := postRepository.NewPostRepository(db)
+	myCache := cache.New(5*time.Minute, 10*time.Minute)
+
+	forumRep := forumRepository.NewForumRepository(db, myCache)
+	userRep := userRepository.NewUserRepository(db, myCache)
+	threadRep := threadRepository.NewThreadRepository(db, myCache)
+	postRep := postRepository.NewPostRepository(db, myCache)
 	serviceRep := serviceRepository.NewServiceRepository(db)
 
-	forumUse := forumUsecase.NewForumUsecase(forumRep, userRep, threadRep)
+	forumUse := forumUsecase.NewForumUsecase(forumRep, userRep, threadRep, myCache)
 	userUse := userUsecase.NewForumUsecase(userRep)
 	threadUse := threadUsecase.NewThreadUsecase(threadRep, userRep)
 	postUse := postUsecase.NewPostUsecase(postRep)
