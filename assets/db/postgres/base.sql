@@ -77,6 +77,8 @@ CREATE INDEX IF NOT EXISTS idx_threads_forum
     ON threads (LOWER(forum));
 CREATE INDEX IF NOT EXISTS idx_threads_pok
     ON threads (id, forum, author, slug, created, title, message, votes);
+CREATE INDEX IF NOT EXISTS idx_threads_created
+    ON threads (created);
 
 CREATE TABLE IF NOT EXISTS posts
 (
@@ -97,6 +99,8 @@ CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts (parent);
 CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts (thread, id);
 CREATE INDEX IF NOT EXISTS idx_posts_pok
     ON posts (id, parent, thread, forum, author, created, message, isedited, path);
+CREATE INDEX IF NOT EXISTS idx_posts_created
+    ON posts (created);
 
 CREATE TABLE IF NOT EXISTS votes
 (
