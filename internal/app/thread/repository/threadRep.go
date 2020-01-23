@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/lib/pq"
 	"github.com/nozimy/technopark-db-forum/internal/app/thread"
 	"github.com/nozimy/technopark-db-forum/internal/model"
 	"strconv"
@@ -90,7 +89,7 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 	}
 
 	if sort == "flat" {
-		query = "SELECT id, parent, thread, forum, author, created, message, isedited, path FROM posts WHERE thread = $1 "
+		query = "SELECT id, parent, thread, forum, author, created, message, isedited FROM posts WHERE thread = $1 "
 		if since != "" {
 			query += fmt.Sprintf(" AND id %s %s ", conditionSign, since)
 		}
@@ -109,7 +108,7 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 		//	"FROM temp " +
 		//	"LIMIT " + limit
 
-		query = "SELECT id, parent, thread, forum, author, created, message, isedited, path " +
+		query = "SELECT id, parent, thread, forum, author, created, message, isedited " +
 			"FROM posts " +
 			"WHERE thread = $1 "
 		if since != "" {
@@ -139,7 +138,7 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 		//	"FROM temp " +
 		//	"ORDER BY path[1] " + desc + ", path "
 
-		query = "SELECT id, parent, thread, forum, author, created, message, isedited, path " +
+		query = "SELECT id, parent, thread, forum, author, created, message, isedited " +
 			"FROM posts " +
 			"WHERE thread = $1 AND path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "
 		if since != "" {
@@ -156,7 +155,7 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 
 	for rows.Next() {
 		p := model.Post{}
-		err := rows.Scan(&p.ID, &p.Parent, &p.Thread, &p.Forum, &p.Author, &p.Created, &p.Message, &p.IsEdited, pq.Array(&p.Path))
+		err := rows.Scan(&p.ID, &p.Parent, &p.Thread, &p.Forum, &p.Author, &p.Created, &p.Message, &p.IsEdited)
 		if err != nil {
 			return nil, err
 		}

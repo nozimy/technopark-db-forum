@@ -1,4 +1,6 @@
 SET SYNCHRONOUS_COMMIT = 'off';
+create extension if not exists citext;
+
 
 DROP INDEX IF EXISTS idx_users_email_uindex;
 DROP INDEX IF EXISTS idx_users_nickname_uindex;
@@ -29,9 +31,9 @@ DROP TABLE IF EXISTS votes;
 CREATE TABLE IF NOT EXISTS users
 (
     id       bigserial not null primary key,
-    nickname varchar(50) COLLATE "POSIX" not null unique,
+    nickname citext COLLATE "POSIX" not null unique,
     about    text,
-    email    varchar(50)   not null,
+    email    citext   not null,
     fullname varchar(100)   not null
 );
 
@@ -39,12 +41,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex
     ON users (LOWER(email));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex
     ON users (LOWER(nickname));
+CREATE INDEX IF NOT EXISTS idx_users_pok
+    ON users (nickname, email, fullname, about, LOWER(email), LOWER(nickname));
 
 CREATE TABLE IF NOT EXISTS forums
 (
     id       bigserial not null primary key,
-    slug     varchar   not null,
-    userNick varchar   not null,
+    slug     citext   not null,
+    userNick citext   not null,
     title    varchar,
     posts    int default 0,
     threads  int default 0
@@ -58,7 +62,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique
 CREATE TABLE IF NOT EXISTS threads
 (
     id      serial not null primary key,
-    slug    varchar,
+    slug    citext,
     title   varchar,
     message varchar,
     votes   int         default 0,
@@ -71,6 +75,8 @@ CREATE INDEX IF NOT EXISTS idx_threads_slug
     ON threads (LOWER(slug));
 CREATE INDEX IF NOT EXISTS idx_threads_forum
     ON threads (LOWER(forum));
+CREATE INDEX IF NOT EXISTS idx_threads_pok
+    ON threads (id, forum, author, slug, created, title, message, votes);
 
 CREATE TABLE IF NOT EXISTS posts
 (
@@ -78,8 +84,8 @@ CREATE TABLE IF NOT EXISTS posts
     parent   bigint             DEFAULT NULL,
     path     bigint[]  NOT NULL DEFAULT '{0}',
     thread   int REFERENCES threads(id) NOT NULL,
-    forum    varchar,
-    author   varchar,
+    forum    citext,
+    author   citext,
     created  timestamptz        DEFAULT now(),
     isEdited bool               DEFAULT FALSE,
     message  text
@@ -89,10 +95,12 @@ CREATE INDEX IF NOT EXISTS idx_posts_thread ON posts (thread);
 CREATE INDEX IF NOT EXISTS idx_posts_forum ON posts (forum);
 CREATE INDEX IF NOT EXISTS idx_posts_parent ON posts (parent);
 CREATE INDEX IF NOT EXISTS idx_posts_thread_id ON posts (thread, id);
+CREATE INDEX IF NOT EXISTS idx_posts_pok
+    ON posts (id, parent, thread, forum, author, created, message, isedited, path);
 
 CREATE TABLE IF NOT EXISTS votes
 (
-    nickname varchar  REFERENCES users(nickname) NOT NULL,
+    nickname citext  REFERENCES users(nickname) NOT NULL,
     thread   int      REFERENCES threads(id) NOT NULL,
     voice    smallint NOT NULL CHECK (voice = 1 OR voice = -1),
     PRIMARY KEY (nickname, thread)
