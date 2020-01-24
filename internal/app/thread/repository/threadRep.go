@@ -24,45 +24,17 @@ func (t ThreadRepository) Vote(thread *model.Thread, vote *model.Vote) (*model.T
 	}
 
 	stmt, err := tx.Prepare("INSERT INTO votes(nickname, voice, thread) VALUES ($1, $2, $3) ON CONFLICT ON CONSTRAINT votes_pkey DO UPDATE SET voice = $2")
-	//stmt, err := tx.Prepare("UPDATE votes SET voice = $3 WHERE LOWER(nickname) = LOWER($1) AND thread=$2")
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
-	//stmtThread, err := tx.Prepare("UPDATE threads SET votes = (SELECT sum(voice) from votes WHERE thread = $1) WHERE id=$1 RETURNING slug, title, message, forum, author, created, votes, id")
-	//if err != nil {
-	//	return nil, err
-	//}
-	//defer stmtThread.Close()
-
-	//row := tx.QueryRow("SELECT voice FROM votes WHERE LOWER(nickname) = LOWER($1) AND thread=$2", vote.Nickname, thread.ID)
-	//var prevVoice int32
-	//if err := row.Scan(&prevVoice); err != nil {
-	//	_, err = tx.Exec("INSERT INTO votes(nickname, thread, voice) VALUES ($1, $2, $3::smallint)", vote.Nickname, thread.ID, vote.Voice)
-	//	if err != nil {
-	//		tx.Rollback()
-	//		return nil, err
-	//	}
-	//} else {
 	_, err = stmt.Exec(vote.Nickname, vote.Voice, thread.ID)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
 	}
-	//}
 
-	//rowT := stmtThread.QueryRow(thread.ID)
-	//err = rowT.Scan(
-	//	&thread.Slug,
-	//	&thread.Title,
-	//	&thread.Message,
-	//	&thread.Forum,
-	//	&thread.Author,
-	//	&thread.Created,
-	//	&thread.Votes,
-	//	&thread.ID,
-	//)
 	rowT := tx.QueryRow("SELECT votes FROM threads WHERE id = $1", thread.ID)
 	err = rowT.Scan(
 		&thread.Votes,
@@ -105,17 +77,6 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 		query += fmt.Sprintf(" ORDER BY created %s, id %s LIMIT %s", desc, desc, limit)
 	} else if sort == "tree" {
 		orderString := fmt.Sprintf(" ORDER BY path[1] %s, path %s ", desc, desc)
-		//query = "WITH temp as (" +
-		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path, row_number() " +
-		//	"over (" + orderString + ") as rownum " +
-		//	"FROM posts WHERE thread = $1 AND (array_length(path, 1) IS NULL OR array_length(path, 1) > 0) "
-		//if since != "" {
-		//	query += fmt.Sprintf(" AND path %s (SELECT path FROM posts WHERE id = %s) ", conditionSign, since)
-		//}
-		//query+= orderString + ") " +
-		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
-		//	"FROM temp " +
-		//	"LIMIT " + limit
 
 		query = "SELECT id, parent, thread, forum, author, created, message, isedited " +
 			"FROM posts " +
@@ -127,26 +88,6 @@ func (t ThreadRepository) GetThreadPosts(thread *model.Thread, limit, desc, sinc
 		query += fmt.Sprintf("LIMIT %s", limit)
 
 	} else if sort == "parent_tree" {
-		//query = "WITH temp as ( " +
-		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path, " +
-		//	"row_number() over (ORDER BY path[1] " + desc + ", path) as rownum " +
-		//	"FROM posts " +
-		//	"WHERE thread = $1 AND " +
-		//	//"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND array_length(path, 1) = 1 " +
-		//	"path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "
-		//if since != "" {
-		//	query += fmt.Sprintf(" AND path %s (SELECT path[1:1] FROM posts WHERE id = %s) ", conditionSign, since)
-		//}
-		//query += "ORDER BY path[1] " + desc + ", path "
-		//
-		//query += " LIMIT " + limit
-		//
-		//query += ")) " +
-		//	"ORDER BY path[1] " + desc + ", path) " +
-		//	"SELECT id, parent, thread, forum, author, created, message, isedited, path " +
-		//	"FROM temp " +
-		//	"ORDER BY path[1] " + desc + ", path "
-
 		query = "SELECT id, parent, thread, forum, author, created, message, isedited " +
 			"FROM posts " +
 			"WHERE thread = $1 AND path && (SELECT ARRAY (select id from posts WHERE thread = $1 AND parent = 0 "

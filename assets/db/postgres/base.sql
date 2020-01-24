@@ -37,16 +37,16 @@ CREATE TABLE IF NOT EXISTS users
     fullname varchar(100)   not null
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex
-    ON users (LOWER(email));
-CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex
-    ON users (LOWER(nickname));
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex
+--     ON users (LOWER(email));
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex
+--     ON users (LOWER(nickname));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_uindex2
     ON users (email);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_nickname_uindex2
     ON users (nickname);
 CREATE INDEX IF NOT EXISTS idx_users_pok
-    ON users (nickname, email, fullname, about, LOWER(email), LOWER(nickname));
+    ON users (nickname, email, fullname, about);
 
 CREATE TABLE IF NOT EXISTS forums
 (
@@ -58,10 +58,10 @@ CREATE TABLE IF NOT EXISTS forums
     threads  int default 0
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_uindex
-    ON forums (LOWER(slug));
-CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique
-    ON forums (LOWER(userNick));
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_uindex
+--     ON forums (LOWER(slug));
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique
+--     ON forums (LOWER(userNick));
 CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_slug_uindex2
     ON forums (slug);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_forums_userNick_unique2
@@ -79,10 +79,10 @@ CREATE TABLE IF NOT EXISTS threads
     created timestamptz DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS idx_threads_slug
-    ON threads (LOWER(slug));
-CREATE INDEX IF NOT EXISTS idx_threads_forum
-    ON threads (LOWER(forum));
+-- CREATE INDEX IF NOT EXISTS idx_threads_slug
+--     ON threads (LOWER(slug));
+-- CREATE INDEX IF NOT EXISTS idx_threads_forum
+--     ON threads (LOWER(forum));
 CREATE INDEX IF NOT EXISTS idx_threads_slug2
     ON threads (slug);
 CREATE INDEX IF NOT EXISTS idx_threads_forum2
@@ -91,6 +91,8 @@ CREATE INDEX IF NOT EXISTS idx_threads_pok
     ON threads (id, forum, author, slug, created, title, message, votes);
 CREATE INDEX IF NOT EXISTS idx_threads_created
     ON threads (created);
+CREATE INDEX IF NOT EXISTS idx_threads_created2
+    ON threads (created, forum);
 
 CREATE TABLE IF NOT EXISTS posts
 (
@@ -121,8 +123,8 @@ CREATE TABLE IF NOT EXISTS votes
     voice    smallint NOT NULL CHECK (voice = 1 OR voice = -1),
     PRIMARY KEY (nickname, thread)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique
-    ON votes (LOWER(nickname), thread);
+-- CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique
+--     ON votes (LOWER(nickname), thread);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_votes_nickname_thread_unique2
     ON votes (nickname, thread);
 
@@ -181,8 +183,10 @@ CREATE INDEX idx_forum_users_user_id_forum_id
 CREATE OR REPLACE FUNCTION forum_users_update()
     RETURNS TRIGGER AS '
     BEGIN
-        INSERT INTO forum_users (user_id, forum_id) VALUES ((SELECT id FROM users WHERE LOWER(NEW.author) = LOWER(nickname)),
-                                                              (SELECT id FROM forums WHERE LOWER(NEW.forum) = LOWER(slug)));
+--         INSERT INTO forum_users (user_id, forum_id) VALUES ((SELECT id FROM users WHERE LOWER(NEW.author) = LOWER(nickname)),
+--                                                               (SELECT id FROM forums WHERE LOWER(NEW.forum) = LOWER(slug)));
+        INSERT INTO forum_users (user_id, forum_id) VALUES ((SELECT id FROM users WHERE NEW.author = nickname),
+                                                            (SELECT id FROM forums WHERE NEW.forum = slug));
         RETURN NULL;
     END;
 ' LANGUAGE plpgsql;
@@ -194,3 +198,9 @@ CREATE TRIGGER on_post_insert
 CREATE TRIGGER on_thread_insert
     AFTER INSERT ON threads
     FOR EACH ROW EXECUTE PROCEDURE forum_users_update();
+
+
+CLUSTER users USING users_nickname_key;
+CLUSTER threads USING idx_threads_created2;
+CLUSTER forums USING idx_forums_slug_uindex2;
+CLUSTER posts USING idx_posts_thread_id;
